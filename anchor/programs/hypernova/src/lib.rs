@@ -1,243 +1,287 @@
 #![allow(clippy::result_large_err)]
 
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Token, TokenAccount, Mint};
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token_interface::{
+        initialize_mint, mint_to, transfer_checked, InitializeMint, Mint, TokenAccount,
+        TokenInterface, TransferChecked,
+    },
+};
+use solana_program::{program::invoke, system_instruction};
 
 declare_id!("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF");
 
 #[program]
-pub mod hypernova {
+pub mod token_launchpad {
+    use anchor_spl::token_2022::MintTo;
+
     use super::*;
 
-    pub fn initialize_presale(
-        ctx: Context<InitializePresale>, 
-        presale_price: u64,
-        min_purchase: u64,
-        max_purchase: u64,
-        hard_cap: u64,
-        start_time: i64,
-        end_time: i64
+    pub fn initiate_presale(
+        ctx: Context<InitiatePresale>,
+        _name: String,
+        _symbol: String,
+        decimals: u8,
+        total_supply: u64,
+        presale_percentage: u8,
+        token_price: u64,
     ) -> Result<()> {
-        // TODO: 1. Init presale 2. check input
-        let presale_pool = &mut ctx.accounts.presale_pool;
-        
-        require!(start_time < end_time, PresaleError::InvalidTimeRange);
-        require!(min_purchase < max_purchase, PresaleError::InvalidPurchaseRange);
-        
-        presale_pool.presale_token_mint = ctx.accounts.token_mint.key();
-        presale_pool.presale_price = presale_price;
-        presale_pool.min_purchase = min_purchase;
-        presale_pool.max_purchase = max_purchase;
-        presale_pool.hard_cap = hard_cap;
-        presale_pool.start_time = start_time;
-        presale_pool.end_time = end_time;
-        presale_pool.total_raised = 0;
-        presale_pool.total_tokens_sold = 0;
-        presale_pool.is_finalized = false;
+        // TODO:
+        // 1. Validate inputs
+        // 2. Calculate token allocations
+        // 3. Prepare PDA seeds for signing
+        // 4. Mint to presale pool
+        // 5. Mint to LP pool
+        // 6. Mint to developer wallet
+        // 7. Store presale information
+        // 8. TODO: Write some test case
+
+        require!(
+            presale_percentage <= 70,
+            LaunchpadError::InvalidPresalePercentage
+        );
+        require!(total_supply > 0, LaunchpadError::InvalidTotalSupply);
+
+        let lp_percentage = 20; // Fixed 20% for LP
+        let presale_amount = (total_supply * presale_percentage as u64) / 100;
+        let lp_amount = (total_supply * lp_percentage as u64) / 100;
+        let dev_amount = total_supply - presale_amount - lp_amount;
+
+        let presale_key = ctx.accounts.presale_account.key();
+
+        initialize_mint(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                InitializeMint {
+                    mint: ctx.accounts.token_mint.to_account_info(),
+                    rent: ctx.accounts.rent.to_account_info(),
+                },
+            ),
+            decimals,
+            &ctx.accounts.presale_account.key(),
+            Some(&ctx.accounts.presale_account.key()),
+        )?;
+
+        let presale_seeds = &[
+            b"presale".as_ref(),
+            presale_key.as_ref(),
+            &[ctx.accounts.presale_account.bump],
+        ];
+        let signer = &[&presale_seeds[..]];
+
+        mint_to(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                MintTo {
+                    mint: ctx.accounts.token_mint.to_account_info(),
+                    to: ctx.accounts.presale_pool_account.to_account_info(),
+                    authority: ctx.accounts.presale_account.to_account_info(),
+                },
+                signer,
+            ),
+            presale_amount,
+        )?;
+
+        mint_to(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                MintTo {
+                    mint: ctx.accounts.token_mint.to_account_info(),
+                    to: ctx.accounts.lp_pool_account.to_account_info(),
+                    authority: ctx.accounts.presale_account.to_account_info(),
+                },
+                signer,
+            ),
+            lp_amount,
+        )?;
+
+        mint_to(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                MintTo {
+                    mint: ctx.accounts.token_mint.to_account_info(),
+                    to: ctx.accounts.developer_account.to_account_info(),
+                    authority: ctx.accounts.presale_account.to_account_info(),
+                },
+                signer,
+            ),
+            dev_amount,
+        )?;
+
+        let presale_info = &mut ctx.accounts.presale_account;
+        presale_info.token_mint = ctx.accounts.token_mint.key();
+        presale_info.total_supply = total_supply;
+        presale_info.presale_amount = presale_amount;
+        presale_info.token_price = token_price;
+        presale_info.developer = ctx.accounts.developer.key();
+        presale_info.bump = ctx.bumps.presale_account;
 
         Ok(())
     }
 
-    pub fn purchase_tokens(
-        ctx: Context<PurchaseTokens>, 
-        sol_amount: u64
-    ) -> Result<()> {
-        let presale_pool = &mut ctx.accounts.presale_pool;
-        let clock = Clock::get()?;
-        let current_timestamp = clock.unix_timestamp;
+    pub fn purchase_tokens(ctx: Context<PurchaseTokens>, sol_amount: u64) -> Result<()> {
+        // Mota Mota ye krna h
+        // 1. Calculate tokens to purchase using the presale_info
+        // 2. Validate purchase
+        // 3. Transfer SOL to presale vault
+        // 4. Prepare PDA seeds for signing using the captured key and bump
+        // 5. Transfer tokens to user
+        // 6. Update presale amount after all borrows are released
 
-        // Validate purchase conditions
+        let presale_key = ctx.accounts.presale_account.key();
+        let presale_bump = ctx.accounts.presale_account.bump;
+        let tokens_to_purchase = sol_amount / ctx.accounts.presale_account.token_price;
+
         require!(
-            current_timestamp >= presale_pool.start_time && 
-            current_timestamp <= presale_pool.end_time, 
-            PresaleError::PresaleNotActive
+            tokens_to_purchase <= ctx.accounts.presale_account.presale_amount,
+            LaunchpadError::InsufficientTokens
         );
 
-        // Check purchase amount limits
-        require!(
-            sol_amount >= presale_pool.min_purchase &&
-            sol_amount <= presale_pool.max_purchase, 
-            PresaleError::InvalidPurchaseAmount
+        let transfer_instruction = system_instruction::transfer(
+            &ctx.accounts.user.key(),
+            &ctx.accounts.presale_vault.key(),
+            sol_amount,
         );
+        invoke(
+            &transfer_instruction,
+            &[
+                ctx.accounts.user.to_account_info(),
+                ctx.accounts.presale_vault.to_account_info(),
+                ctx.accounts.system_program.to_account_info(),
+            ],
+        )?;
 
-        // Calculate tokens to receive
-        let tokens_to_receive = sol_amount
-            .checked_div(presale_pool.presale_price)
-            .ok_or(PresaleError::MathOverflow)?;
+        let presale_seeds = &[b"presale".as_ref(), presale_key.as_ref(), &[presale_bump]];
+        // let signer = &[presale_seeds];
+        let signer = &[&presale_seeds[..]];
 
-        // Check hard cap
-        require!(
-            presale_pool.total_tokens_sold
-                .checked_add(tokens_to_receive)
-                .ok_or(PresaleError::MathOverflow)? 
-            <= presale_pool.hard_cap, 
-            PresaleError::HardCapExceeded
-        );
+        transfer_checked(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                TransferChecked {
+                    from: ctx.accounts.presale_pool_account.to_account_info(),
+                    to: ctx.accounts.user_token_account.to_account_info(),
+                    authority: ctx.accounts.presale_account.to_account_info(),
+                    mint: ctx.accounts.token_mint.to_account_info(),
+                },
+                signer,
+            ),
+            tokens_to_purchase,
+            ctx.accounts.token_mint.decimals,
+        )?;
 
-        // Transfer SOL to presale vault
-        let cpi_context = CpiContext::new(
-            ctx.accounts.system_program.to_account_info(),
-            anchor_lang::system_program::Transfer {
-                from: ctx.accounts.buyer.to_account_info(),
-                to: ctx.accounts.presale_vault.to_account_info(),
-            }
-        );
-        anchor_lang::system_program::transfer(cpi_context, sol_amount)?;
-
-        // Mint tokens to buyer
-        let token_context = CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            token::MintTo {
-                mint: ctx.accounts.token_mint.to_account_info(),
-                to: ctx.accounts.buyer_token_account.to_account_info(),
-                authority: ctx.accounts.presale_pool.key(),
-            }
-        );
-        token::mint_to(token_context, tokens_to_receive)?;
-
-        // Update presale pool state
-        presale_pool.total_raised = presale_pool
-            .total_raised
-            .checked_add(sol_amount)
-            .ok_or(PresaleError::MathOverflow)?;
-        
-        presale_pool.total_tokens_sold = presale_pool
-            .total_tokens_sold
-            .checked_add(tokens_to_receive)
-            .ok_or(PresaleError::MathOverflow)?;
-
-        Ok(())
-    }
-
-    pub fn finalize_presale(ctx: Context<FinalizePresale>) -> Result<()> {
-        let presale_pool = &mut ctx.accounts.presale_pool;
-        let clock = Clock::get()?;
-
-        // Ensure presale is over and not already finalized
-        require!(
-            clock.unix_timestamp > presale_pool.end_time, 
-            PresaleError::PresaleNotEnded
-        );
-        require!(!presale_pool.is_finalized, PresaleError::AlreadyFinalized);
-
-        // Transfer raised funds to project wallet
-        let cpi_context = CpiContext::new(
-            ctx.accounts.system_program.to_account_info(),
-            anchor_lang::system_program::Transfer {
-                from: ctx.accounts.presale_vault.to_account_info(),
-                to: ctx.accounts.project_wallet.to_account_info(),
-            }
-        );
-        let total_raised = presale_pool.total_raised;
-        anchor_lang::system_program::transfer(cpi_context, total_raised)?;
-
-        // Mark presale as finalized
-        presale_pool.is_finalized = true;
+        let presale_info = &mut ctx.accounts.presale_account;
+        presale_info.presale_amount -= tokens_to_purchase;
 
         Ok(())
     }
 }
 
 #[derive(Accounts)]
-pub struct InitializePresale<'info> {
+pub struct InitiatePresale<'info> {
     #[account(mut)]
-    pub authority: Signer<'info>,
-    
+    pub developer: Signer<'info>,
+
     #[account(
-        init, 
-        payer = authority, 
-        space = 8 + 256 // Additional space for future upgrades
+        init,
+        payer = developer,
+        space = 8 + PresaleInfo::INIT_SPACE,
+        seeds = [b"presale", developer.key().as_ref()],
+        bump
+
     )]
-    pub presale_pool: Account<'info, PresalePool>,
-    
-    pub token_mint: Account<'info, Mint>,
-    
+    pub presale_account: Account<'info, PresaleInfo>,
+
+    #[account(
+        init,
+        payer = developer,
+        mint::decimals = 6,
+        mint::authority = presale_account
+    )]
+    pub token_mint: InterfaceAccount<'info, Mint>,
+
+    #[account(
+        init_if_needed,
+        payer = developer,
+        associated_token::mint = token_mint,
+        associated_token::authority = presale_account
+    )]
+    pub presale_pool_account: InterfaceAccount<'info, TokenAccount>,
+
+    #[account(
+        init_if_needed,
+        payer = developer,
+        associated_token::mint = token_mint,
+        associated_token::authority = presale_account
+    )]
+    pub lp_pool_account: InterfaceAccount<'info, TokenAccount>,
+
+    #[account(
+        init_if_needed,
+        payer = developer,
+        associated_token::mint = token_mint,
+        associated_token::authority = developer
+    )]
+    pub developer_account: InterfaceAccount<'info, TokenAccount>,
+
+    pub token_program: Interface<'info, TokenInterface>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
     pub rent: Sysvar<'info, Rent>,
 }
 
 #[derive(Accounts)]
 pub struct PurchaseTokens<'info> {
     #[account(mut)]
-    pub presale_pool: Account<'info, PresalePool>,
-    
-    #[account(mut)]
-    pub buyer: Signer<'info>,
-    
-    #[account(
-        mut,
-        seeds = [b"presale_vault"],
-        bump
-    )]
-    pub presale_vault: SystemAccount<'info>,
-    
-    #[account(mut)]
-    pub token_mint: Account<'info, Mint>,
-    
-    #[account(
-        mut,
-        associated_token::mint = token_mint,
-        associated_token::authority = buyer
-    )]
-    pub buyer_token_account: Account<'info, TokenAccount>,
-    
-    pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
-}
+    pub user: Signer<'info>,
 
-#[derive(Accounts)]
-pub struct FinalizePresale<'info> {
     #[account(mut)]
-    pub authority: Signer<'info>,
-    
-    #[account(mut)]
-    pub presale_pool: Account<'info, PresalePool>,
-    
+    pub presale_account: Account<'info, PresaleInfo>,
+
     #[account(
         mut,
-        seeds = [b"presale_vault"],
-        bump
+        associated_token::mint = presale_account.token_mint,
+        associated_token::authority = presale_account
     )]
-    pub presale_vault: SystemAccount<'info>,
-    
+    pub presale_pool_account: InterfaceAccount<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        associated_token::mint = presale_account.token_mint,
+        associated_token::authority = user
+    )]
+    pub user_token_account: InterfaceAccount<'info, TokenAccount>,
+
+    #[account(
+        address = presale_account.token_mint
+    )]
+    pub token_mint: InterfaceAccount<'info, Mint>,
+
     #[account(mut)]
-    pub project_wallet: SystemAccount<'info>,
-    
+    pub presale_vault: SystemAccount<'info>,
+
+    pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
 }
 
 #[account]
-#[derive(Default)]
-pub struct PresalePool {
-    pub presale_token_mint: Pubkey,
-    pub presale_price: u64,         // Price per token in lamports
-    pub min_purchase: u64,          // Minimum purchase amount
-    pub max_purchase: u64,          // Maximum purchase amount
-    pub hard_cap: u64,              // Maximum tokens to sell
-    pub start_time: i64,            // Presale start timestamp
-    pub end_time: i64,              // Presale end timestamp
-    pub total_raised: u64,          // Total SOL raised
-    pub total_tokens_sold: u64,     // Total tokens sold
-    pub is_finalized: bool,         // Presale finalization status
+#[derive(InitSpace)]
+pub struct PresaleInfo {
+    pub token_mint: Pubkey,
+    pub total_supply: u64,
+    pub presale_amount: u64,
+    pub token_price: u64,
+    pub developer: Pubkey,
+    pub bump: u8,
 }
 
 #[error_code]
-pub enum PresaleError {
-    #[msg("Invalid time range for presale")]
-    InvalidTimeRange,
-    #[msg("Invalid purchase amount range")]
-    InvalidPurchaseRange,
-    #[msg("Presale is not active")]
-    PresaleNotActive,
-    #[msg("Invalid purchase amount")]
-    InvalidPurchaseAmount,
-    #[msg("Presale hard cap exceeded")]
-    HardCapExceeded,
-    #[msg("Math overflow occurred")]
-    MathOverflow,
-    #[msg("Presale has not ended")]
-    PresaleNotEnded,
-    #[msg("Presale already finalized")]
-    AlreadyFinalized,
+pub enum LaunchpadError {
+    #[msg("Invalid presale percentage")]
+    InvalidPresalePercentage,
+    #[msg("Invalid total supply")]
+    InvalidTotalSupply,
+    #[msg("Insufficient tokens in presale pool")]
+    InsufficientTokens,
 }
