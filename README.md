@@ -1,96 +1,21 @@
-# legacy-hypernova
+### Here is the flow of what I understand: 
 
-## Getting Started
+1. we are building a token launchpad where anyone((Developer)) can come and launch the token.
+2. We also have pre-sale option means: developer raise funds before lunch. how he will do this is via pool. 
+	developer will put some token in pool and anyone can buy from the pool, this will happend via fixed prices.
+	in smart contract. formula is given by yash.
 
-### Prerequisites
+3. Each token (100%) = 20% LP (Constant) + X% Dev wants to sell (or Presale folks to buy) + Y% for Dev to buy (or team allocation)
 
-- Node v18.18.0 or higher
+4. The SOL raised during the presale is permanently added to a LP along with an equivalent amount of the project's tokens(i.e 20% constant).
 
-- Rust v1.77.2 or higher
-- Anchor CLI 0.30.1 or higher
-- Solana CLI 1.18.17 or higher
+### My Task will be 
+1. Pool where users can deposit the amount and just receive the tokens from the pool
+- initialize_presale
+- purchase_tokens
+- finalize_presale
 
-### Installation
-
-#### Clone the repo
-
-```shell
-git clone <repo-url>
-cd <repo-name>
-```
-
-#### Install Dependencies
-
-```shell
-pnpm install
-```
-
-#### Start the web app
-
-```
-pnpm dev
-```
-
-## Apps
-
-### anchor
-
-This is a Solana program written in Rust using the Anchor framework.
-
-#### Commands
-
-You can use any normal anchor commands. Either move to the `anchor` directory and run the `anchor` command or prefix the
-command with `pnpm`, eg: `pnpm anchor`.
-
-#### Sync the program id:
-
-Running this command will create a new keypair in the `anchor/target/deploy` directory and save the address to the
-Anchor config file and update the `declare_id!` macro in the `./src/lib.rs` file of the program.
-
-You will manually need to update the constant in `anchor/lib/counter-exports.ts` to match the new program id.
-
-```shell
-pnpm anchor keys sync
-```
-
-#### Build the program:
-
-```shell
-pnpm anchor-build
-```
-
-#### Start the test validator with the program deployed:
-
-```shell
-pnpm anchor-localnet
-```
-
-#### Run the tests
-
-```shell
-pnpm anchor-test
-```
-
-#### Deploy to Devnet
-
-```shell
-pnpm anchor deploy --provider.cluster devnet
-```
-
-### web
-
-This is a React app that uses the Anchor generated client to interact with the Solana program.
-
-#### Commands
-
-Start the web app
-
-```shell
-pnpm dev
-```
-
-Build the web app
-
-```shell
-pnpm build
-```
+### My be:
+2. Token allocation Managemnt
+- set_token_allocation:- Implement access controls for allocation settings
+- create_liquidity_pool:- Automatically create a liquidity pool on a DEX
