@@ -26,22 +26,21 @@ pub mod token_launchpad {
         total_supply: u64,
         presale_percentage: u8,
         token_price: u64,
+        start_time: i64,
+        end_time: i64,
+        min_purchase: u64,
+        max_purchase: u64,
     ) -> Result<()> {
-        // TODO:
-        // 1. Validate inputs
-        // 2. Calculate token allocations
-        // 3. Prepare PDA seeds for signing
-        // 4. Mint to presale pool
-        // 5. Mint to LP pool
-        // 6. Mint to developer wallet
-        // 7. Store presale information
-        // 8. TODO: Write some test case
-
         require!(
             presale_percentage <= 70,
             LaunchpadError::InvalidPresalePercentage
         );
         require!(total_supply > 0, LaunchpadError::InvalidTotalSupply);
+        require!(start_time < end_time, LaunchpadError::InvalidPresaleTime);
+        require!(
+            min_purchase < max_purchase && max_purchase > 0,
+            LaunchpadError::InvalidPurchaseLimits
+        );
 
         let lp_percentage = 20; // Fixed 20% for LP
         let presale_amount = (total_supply * presale_percentage as u64) / 100;
@@ -115,23 +114,40 @@ pub mod token_launchpad {
         presale_info.presale_amount = presale_amount;
         presale_info.token_price = token_price;
         presale_info.developer = ctx.accounts.developer.key();
+        presale_info.start_time = start_time;
+        presale_info.end_time = end_time;
+        presale_info.min_purchase = min_purchase;
+        presale_info.max_purchase = max_purchase;
         presale_info.bump = ctx.bumps.presale_account;
 
         Ok(())
     }
 
     pub fn purchase_tokens(ctx: Context<PurchaseTokens>, sol_amount: u64) -> Result<()> {
-        // Mota Mota ye krna h
-        // 1. Calculate tokens to purchase using the presale_info
-        // 2. Validate purchase
-        // 3. Transfer SOL to presale vault
-        // 4. Prepare PDA seeds for signing using the captured key and bump
-        // 5. Transfer tokens to user
-        // 6. Update presale amount after all borrows are released
-
         let presale_key = ctx.accounts.presale_account.key();
         let presale_bump = ctx.accounts.presale_account.bump;
         let tokens_to_purchase = sol_amount / ctx.accounts.presale_account.token_price;
+        
+        // Check if presale is active
+        let current_time = Clock::get()?.unix_timestamp;
+        require!(
+            current_time >= ctx.accounts.presale_account.start_time,
+            LaunchpadError::PresaleNotStarted
+        );
+        require!(
+            current_time <= ctx.accounts.presale_account.end_time,
+            LaunchpadError::PresaleEnded
+        );
+        
+        // Check purchase limits
+        require!(
+            tokens_to_purchase >= ctx.accounts.presale_account.min_purchase,
+            LaunchpadError::BelowMinimumPurchase
+        );
+        require!(
+            tokens_to_purchase <= ctx.accounts.presale_account.max_purchase,
+            LaunchpadError::AboveMaximumPurchase
+        );
 
         require!(
             tokens_to_purchase <= ctx.accounts.presale_account.presale_amount,
@@ -153,7 +169,6 @@ pub mod token_launchpad {
         )?;
 
         let presale_seeds = &[b"presale".as_ref(), presale_key.as_ref(), &[presale_bump]];
-        // let signer = &[presale_seeds];
         let signer = &[&presale_seeds[..]];
 
         transfer_checked(
@@ -179,6 +194,8 @@ pub mod token_launchpad {
 }
 
 #[derive(Accounts)]
+#[instruction(_name: String, _symbol: String, decimals: u8, total_supply: u64, presale_percentage: u8, token_price: u64, 
+              start_time: i64, end_time: i64, min_purchase: u64, max_purchase: u64)]
 pub struct InitiatePresale<'info> {
     #[account(mut)]
     pub developer: Signer<'info>,
@@ -189,17 +206,16 @@ pub struct InitiatePresale<'info> {
         space = 8 + PresaleInfo::INIT_SPACE,
         seeds = [b"presale", developer.key().as_ref()],
         bump
-
     )]
-    pub presale_account: Account<'info, PresaleInfo>,
+    pub presale_account: Box<Account<'info, PresaleInfo>>,
 
     #[account(
         init,
         payer = developer,
-        mint::decimals = 6,
+        mint::decimals = decimals,
         mint::authority = presale_account
     )]
-    pub token_mint: InterfaceAccount<'info, Mint>,
+    pub token_mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
         init_if_needed,
@@ -207,7 +223,7 @@ pub struct InitiatePresale<'info> {
         associated_token::mint = token_mint,
         associated_token::authority = presale_account
     )]
-    pub presale_pool_account: InterfaceAccount<'info, TokenAccount>,
+    pub presale_pool_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         init_if_needed,
@@ -215,7 +231,7 @@ pub struct InitiatePresale<'info> {
         associated_token::mint = token_mint,
         associated_token::authority = presale_account
     )]
-    pub lp_pool_account: InterfaceAccount<'info, TokenAccount>,
+    pub lp_pool_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
         init_if_needed,
@@ -223,7 +239,7 @@ pub struct InitiatePresale<'info> {
         associated_token::mint = token_mint,
         associated_token::authority = developer
     )]
-    pub developer_account: InterfaceAccount<'info, TokenAccount>,
+    pub developer_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     pub token_program: Interface<'info, TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>,
@@ -273,6 +289,10 @@ pub struct PresaleInfo {
     pub presale_amount: u64,
     pub token_price: u64,
     pub developer: Pubkey,
+    pub start_time: i64,
+    pub end_time: i64,
+    pub min_purchase: u64,
+    pub max_purchase: u64,
     pub bump: u8,
 }
 
@@ -284,4 +304,16 @@ pub enum LaunchpadError {
     InvalidTotalSupply,
     #[msg("Insufficient tokens in presale pool")]
     InsufficientTokens,
+    #[msg("Invalid presale time: start time must be before end time")]
+    InvalidPresaleTime,
+    #[msg("Invalid purchase limits: min must be less than max and max must be greater than zero")]
+    InvalidPurchaseLimits,
+    #[msg("Presale has not started yet")]
+    PresaleNotStarted,
+    #[msg("Presale has already ended")]
+    PresaleEnded,
+    #[msg("Purchase amount is below minimum allowed")]
+    BelowMinimumPurchase,
+    #[msg("Purchase amount is above maximum allowed")]
+    AboveMaximumPurchase,
 }

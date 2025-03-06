@@ -364,6 +364,22 @@
         {
           "name": "token_price",
           "type": "u64"
+        },
+        {
+          "name": "start_time",
+          "type": "i64"
+        },
+        {
+          "name": "end_time",
+          "type": "i64"
+        },
+        {
+          "name": "min_purchase",
+          "type": "u64"
+        },
+        {
+          "name": "max_purchase",
+          "type": "u64"
         }
       ]
     },
@@ -624,6 +640,36 @@
       "code": 6002,
       "name": "InsufficientTokens",
       "msg": "Insufficient tokens in presale pool"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidPresaleTime",
+      "msg": "Invalid presale time: start time must be before end time"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidPurchaseLimits",
+      "msg": "Invalid purchase limits: min must be less than max and max must be greater than zero"
+    },
+    {
+      "code": 6005,
+      "name": "PresaleNotStarted",
+      "msg": "Presale has not started yet"
+    },
+    {
+      "code": 6006,
+      "name": "PresaleEnded",
+      "msg": "Presale has already ended"
+    },
+    {
+      "code": 6007,
+      "name": "BelowMinimumPurchase",
+      "msg": "Purchase amount is below minimum allowed"
+    },
+    {
+      "code": 6008,
+      "name": "AboveMaximumPurchase",
+      "msg": "Purchase amount is above maximum allowed"
     }
   ],
   "types": [
@@ -651,6 +697,22 @@
           {
             "name": "developer",
             "type": "pubkey"
+          },
+          {
+            "name": "start_time",
+            "type": "i64"
+          },
+          {
+            "name": "end_time",
+            "type": "i64"
+          },
+          {
+            "name": "min_purchase",
+            "type": "u64"
+          },
+          {
+            "name": "max_purchase",
+            "type": "u64"
           },
           {
             "name": "bump",

@@ -370,6 +370,22 @@ export type TokenLaunchpad = {
         {
           "name": "tokenPrice",
           "type": "u64"
+        },
+        {
+          "name": "startTime",
+          "type": "i64"
+        },
+        {
+          "name": "endTime",
+          "type": "i64"
+        },
+        {
+          "name": "minPurchase",
+          "type": "u64"
+        },
+        {
+          "name": "maxPurchase",
+          "type": "u64"
         }
       ]
     },
@@ -630,6 +646,36 @@ export type TokenLaunchpad = {
       "code": 6002,
       "name": "insufficientTokens",
       "msg": "Insufficient tokens in presale pool"
+    },
+    {
+      "code": 6003,
+      "name": "invalidPresaleTime",
+      "msg": "Invalid presale time: start time must be before end time"
+    },
+    {
+      "code": 6004,
+      "name": "invalidPurchaseLimits",
+      "msg": "Invalid purchase limits: min must be less than max and max must be greater than zero"
+    },
+    {
+      "code": 6005,
+      "name": "presaleNotStarted",
+      "msg": "Presale has not started yet"
+    },
+    {
+      "code": 6006,
+      "name": "presaleEnded",
+      "msg": "Presale has already ended"
+    },
+    {
+      "code": 6007,
+      "name": "belowMinimumPurchase",
+      "msg": "Purchase amount is below minimum allowed"
+    },
+    {
+      "code": 6008,
+      "name": "aboveMaximumPurchase",
+      "msg": "Purchase amount is above maximum allowed"
     }
   ],
   "types": [
@@ -657,6 +703,22 @@ export type TokenLaunchpad = {
           {
             "name": "developer",
             "type": "pubkey"
+          },
+          {
+            "name": "startTime",
+            "type": "i64"
+          },
+          {
+            "name": "endTime",
+            "type": "i64"
+          },
+          {
+            "name": "minPurchase",
+            "type": "u64"
+          },
+          {
+            "name": "maxPurchase",
+            "type": "u64"
           },
           {
             "name": "bump",
