@@ -247,7 +247,7 @@ export type Hypernova = {
             "seeds": [
               {
                 "kind": "account",
-                "path": "developer"
+                "path": "presaleAccount"
               },
               {
                 "kind": "const",

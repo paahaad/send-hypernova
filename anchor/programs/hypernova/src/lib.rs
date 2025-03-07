@@ -4,7 +4,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{
-        initialize_mint, mint_to, transfer_checked, InitializeMint, Mint, TokenAccount,
+        mint_to, transfer_checked, Mint, TokenAccount,
         TokenInterface, TransferChecked,
     },
 };
@@ -15,6 +15,7 @@ declare_id!("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF");
 #[program]
 pub mod hypernova {
     use anchor_spl::token_2022::MintTo;
+    use solana_program::program_option::COption;
 
     use super::*;
 
@@ -22,7 +23,7 @@ pub mod hypernova {
         ctx: Context<InitiatePresale>,
         _name: String,
         _symbol: String,
-        decimals: u8,
+        _decimals: u8,
         total_supply: u64,
         presale_percentage: u8,
         token_price: u64,
@@ -48,31 +49,21 @@ pub mod hypernova {
         let lp_amount = (total_supply * lp_percentage as u64) / 100;
         let dev_amount = total_supply - presale_amount - lp_amount;
 
-        let presale_key = ctx.accounts.presale_account.key();
-
-        msg!("Init Mint");
-        initialize_mint(
-            CpiContext::new(
-                ctx.accounts.token_program.to_account_info(),
-                InitializeMint {
-                    mint: ctx.accounts.token_mint.to_account_info(),
-                    rent: ctx.accounts.rent.to_account_info(),
-                },
-            ),
-            decimals,
-            &ctx.accounts.presale_account.key(),
-            Some(&ctx.accounts.presale_account.key()),
-        )?;
-
-        let presale_seeds = &[
-            b"presale".as_ref(),
-            presale_key.as_ref(),
+        let signer_seeds: [&[&[u8]]; 1] = [&[
+            b"presale",
+            ctx.accounts.developer.to_account_info().key.as_ref(),
             &[ctx.accounts.presale_account.bump],
-        ];
-        let signer = &[&presale_seeds[..]];
-        msg!("Singner is{:?}", signer);
+        ]];
 
-        msg!("Mintit to presale pool");
+        msg!("Minting to presale-pool");
+        msg!("{:?}", ctx.accounts.token_mint.to_account_info());
+        if let COption::Some(mint_auth) = ctx.accounts.token_mint.mint_authority{
+            msg!("{:?}", ctx.accounts.presale_account.to_account_info());
+            msg!("{:?}", mint_auth);
+        }else{
+            msg!("Nothing")
+        }
+        // msg!("token_mint: {:?}, presale_account{:?}",ctx.accounts.token_mint.to_account_info(), ctx.accounts.presale_account.to_account_info());
         mint_to(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
@@ -81,7 +72,7 @@ pub mod hypernova {
                     to: ctx.accounts.presale_pool_account.to_account_info(),
                     authority: ctx.accounts.presale_account.to_account_info(),
                 },
-                signer,
+                &signer_seeds,
             ),
             presale_amount,
         )?;
@@ -95,7 +86,7 @@ pub mod hypernova {
                     to: ctx.accounts.lp_pool_account.to_account_info(),
                     authority: ctx.accounts.presale_account.to_account_info(),
                 },
-                signer,
+                &signer_seeds,
             ),
             lp_amount,
         )?;
@@ -109,7 +100,7 @@ pub mod hypernova {
                     to: ctx.accounts.developer_account.to_account_info(),
                     authority: ctx.accounts.presale_account.to_account_info(),
                 },
-                signer,
+                &signer_seeds,
             ),
             dev_amount,
         )?;
@@ -219,7 +210,7 @@ pub struct InitiatePresale<'info> {
         init,
         payer = developer,
         mint::decimals = decimals,
-        mint::authority = presale_account
+        mint::authority = presale_account,
     )]
     pub token_mint: Box<InterfaceAccount<'info, Mint>>,
 
@@ -227,7 +218,7 @@ pub struct InitiatePresale<'info> {
         init_if_needed,
         payer = developer,
         associated_token::mint = token_mint,
-        associated_token::authority = presale_account
+        associated_token::authority = presale_account,
     )]
     pub presale_pool_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -235,7 +226,7 @@ pub struct InitiatePresale<'info> {
         init_if_needed,
         payer = developer,
         associated_token::mint = token_mint,
-        associated_token::authority = presale_account
+        associated_token::authority = presale_account,
     )]
     pub lp_pool_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
@@ -243,7 +234,7 @@ pub struct InitiatePresale<'info> {
         init_if_needed,
         payer = developer,
         associated_token::mint = token_mint,
-        associated_token::authority = developer
+        associated_token::authority = presale_account
     )]
     pub developer_account: Box<InterfaceAccount<'info, TokenAccount>>,
 

@@ -22,7 +22,7 @@ const hypernovaAddress = new PublicKey(
 
 describe("Hypernova", () => {
   let ctx;
-  let provider;
+  let provider: BankrunProvider;
   let hypernova: anchor.Program<Hypernova>;
   let developer: anchor.web3.Keypair | anchor.web3.Signer;
 
@@ -55,24 +55,28 @@ describe("Hypernova", () => {
     // Create a new mint keypair
     const tokenMint = anchor.web3.Keypair.generate();
 
+    // console.log("here")
+    // console.log(provider.connection)
+    // await provider.connection.requestAirdrop(tokenMint.publicKey, 1000000)
+    // console.log(await provider.connection.getAccountInfo(tokenMint.publicKey))
 
     // Derive the associated token accounts
-    const presalePoolAccount = await getAssociatedTokenAddress(
-      tokenMint.publicKey,
-      presaleAccount,
-      true
-    );
+    // const presalePoolAccount = await getAssociatedTokenAddress(
+    //   tokenMint.publicKey,
+    //   presaleAccount,
+    //   true
+    // );
 
-    const lpPoolAccount = await getAssociatedTokenAddress(
-      tokenMint.publicKey,
-      presaleAccount,
-      true
-    );
+    // const lpPoolAccount = await getAssociatedTokenAddress(
+    //   tokenMint.publicKey,
+    //   presaleAccount,
+    //   true
+    // );
 
-    const developerAccount = await getAssociatedTokenAddress(
-      tokenMint.publicKey,
-      developer.publicKey
-    );
+    // const developerAccount = await getAssociatedTokenAddress(
+    //   tokenMint.publicKey,
+    //   developer.publicKey
+    // );
 
     await hypernova.methods
       .initiatePresale(

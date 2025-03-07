@@ -241,7 +241,7 @@
             "seeds": [
               {
                 "kind": "account",
-                "path": "developer"
+                "path": "presale_account"
               },
               {
                 "kind": "const",
@@ -350,7 +350,7 @@
           "type": "string"
         },
         {
-          "name": "decimals",
+          "name": "_decimals",
           "type": "u8"
         },
         {
