@@ -1,76 +1,97 @@
-import * as anchor from '@coral-xyz/anchor'
-import { Program } from '@coral-xyz/anchor'
-import { Keypair } from '@solana/web3.js'
-import { Hypernova } from '../target/types/hypernova'
+import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import {
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  SYSVAR_RENT_PUBKEY,
+} from "@solana/web3.js";
+import { Hypernova } from "../target/types/hypernova";
+import { BankrunProvider, startAnchor } from "anchor-bankrun";
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddress,
+} from "@solana/spl-token";
 
-describe('hypernova', () => {
-  // Configure the client to use the local cluster.
-  const provider = anchor.AnchorProvider.env()
-  anchor.setProvider(provider)
-  const payer = provider.wallet as anchor.Wallet
+const IDL = require("../target/idl/hypernova.json");
 
-  const program = anchor.workspace.Hypernova as Program<Hypernova>
+const hypernovaAddress = new PublicKey(
+  "coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF"
+);
 
-  const hypernovaKeypair = Keypair.generate()
+describe("Hypernova", () => {
+  let ctx;
+  let provider;
+  let hypernova: anchor.Program<Hypernova>;
+  let developer: anchor.web3.Keypair | anchor.web3.Signer;
 
-  it('Initialize Hypernova', async () => {
-    await program.methods
-      .initialize()
+  beforeAll(async () => {
+    ctx = await startAnchor(
+      "",
+      [
+        {
+          name: "hypernova",
+          programId: hypernovaAddress,
+        },
+      ],
+      []
+    );
+
+    provider = new BankrunProvider(ctx);
+    developer = provider.wallet.payer;
+
+    hypernova = new Program<Hypernova>(IDL, provider);
+
+  });
+
+  it("Initiate Presale", async () => {
+    // Derive the PDA for the presale account
+    const [presaleAccount] = anchor.web3.PublicKey.findProgramAddressSync(
+      [Buffer.from("presale"), developer.publicKey.toBuffer()],
+      hypernova.programId
+    );
+
+    // Create a new mint keypair
+    const tokenMint = anchor.web3.Keypair.generate();
+
+
+    // Derive the associated token accounts
+    const presalePoolAccount = await getAssociatedTokenAddress(
+      tokenMint.publicKey,
+      presaleAccount,
+      true
+    );
+
+    const lpPoolAccount = await getAssociatedTokenAddress(
+      tokenMint.publicKey,
+      presaleAccount,
+      true
+    );
+
+    const developerAccount = await getAssociatedTokenAddress(
+      tokenMint.publicKey,
+      developer.publicKey
+    );
+
+    await hypernova.methods
+      .initiatePresale(
+        "Hypernova",
+        "HYN",
+        8, //decimals
+        new anchor.BN(2100000), //total_supply
+        50, //presale_percentage
+        new anchor.BN(1000), //token_price
+        new anchor.BN(172342344), //start_time
+        new anchor.BN(182342344), //end_time
+        new anchor.BN(2000), // min_purchase
+        new anchor.BN(2400) //max_purchase
+      )
       .accounts({
-        hypernova: hypernovaKeypair.publicKey,
-        payer: payer.publicKey,
+        tokenMint: tokenMint.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
       })
-      .signers([hypernovaKeypair])
-      .rpc()
-
-    const currentCount = await program.account.hypernova.fetch(hypernovaKeypair.publicKey)
-
-    expect(currentCount.count).toEqual(0)
-  })
-
-  it('Increment Hypernova', async () => {
-    await program.methods.increment().accounts({ hypernova: hypernovaKeypair.publicKey }).rpc()
-
-    const currentCount = await program.account.hypernova.fetch(hypernovaKeypair.publicKey)
-
-    expect(currentCount.count).toEqual(1)
-  })
-
-  it('Increment Hypernova Again', async () => {
-    await program.methods.increment().accounts({ hypernova: hypernovaKeypair.publicKey }).rpc()
-
-    const currentCount = await program.account.hypernova.fetch(hypernovaKeypair.publicKey)
-
-    expect(currentCount.count).toEqual(2)
-  })
-
-  it('Decrement Hypernova', async () => {
-    await program.methods.decrement().accounts({ hypernova: hypernovaKeypair.publicKey }).rpc()
-
-    const currentCount = await program.account.hypernova.fetch(hypernovaKeypair.publicKey)
-
-    expect(currentCount.count).toEqual(1)
-  })
-
-  it('Set hypernova value', async () => {
-    await program.methods.set(42).accounts({ hypernova: hypernovaKeypair.publicKey }).rpc()
-
-    const currentCount = await program.account.hypernova.fetch(hypernovaKeypair.publicKey)
-
-    expect(currentCount.count).toEqual(42)
-  })
-
-  it('Set close the hypernova account', async () => {
-    await program.methods
-      .close()
-      .accounts({
-        payer: payer.publicKey,
-        hypernova: hypernovaKeypair.publicKey,
-      })
-      .rpc()
-
-    // The account should no longer exist, returning null.
-    const userAccount = await program.account.hypernova.fetchNullable(hypernovaKeypair.publicKey)
-    expect(userAccount).toBeNull()
-  })
-})
+      .signers([developer, tokenMint])
+      .rpc();
+  });
+});

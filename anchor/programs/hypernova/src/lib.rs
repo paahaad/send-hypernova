@@ -13,7 +13,7 @@ use solana_program::{program::invoke, system_instruction};
 declare_id!("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF");
 
 #[program]
-pub mod token_launchpad {
+pub mod hypernova {
     use anchor_spl::token_2022::MintTo;
 
     use super::*;
@@ -31,6 +31,7 @@ pub mod token_launchpad {
         min_purchase: u64,
         max_purchase: u64,
     ) -> Result<()> {
+        msg!("Init presale");
         require!(
             presale_percentage <= 70,
             LaunchpadError::InvalidPresalePercentage
@@ -49,6 +50,7 @@ pub mod token_launchpad {
 
         let presale_key = ctx.accounts.presale_account.key();
 
+        msg!("Init Mint");
         initialize_mint(
             CpiContext::new(
                 ctx.accounts.token_program.to_account_info(),
@@ -68,7 +70,9 @@ pub mod token_launchpad {
             &[ctx.accounts.presale_account.bump],
         ];
         let signer = &[&presale_seeds[..]];
+        msg!("Singner is{:?}", signer);
 
+        msg!("Mintit to presale pool");
         mint_to(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
@@ -82,6 +86,7 @@ pub mod token_launchpad {
             presale_amount,
         )?;
 
+        msg!("Mint to LP pool");
         mint_to(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
@@ -95,6 +100,7 @@ pub mod token_launchpad {
             lp_amount,
         )?;
 
+        msg!("Mintit to developer account");
         mint_to(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
