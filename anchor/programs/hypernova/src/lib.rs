@@ -15,7 +15,7 @@ declare_id!("coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF");
 #[program]
 pub mod hypernova {
     use anchor_spl::token_2022::MintTo;
-    use solana_program::program_option::COption;
+    // use solana_program::program_option::COption;
 
     use super::*;
 
@@ -52,18 +52,20 @@ pub mod hypernova {
         let signer_seeds: [&[&[u8]]; 1] = [&[
             b"presale",
             ctx.accounts.developer.to_account_info().key.as_ref(),
-            &[ctx.accounts.presale_account.bump],
+            &[ctx.bumps.presale_account],
         ]];
 
-        msg!("Minting to presale-pool");
-        msg!("{:?}", ctx.accounts.token_mint.to_account_info());
-        if let COption::Some(mint_auth) = ctx.accounts.token_mint.mint_authority{
-            msg!("{:?}", ctx.accounts.presale_account.to_account_info());
-            msg!("{:?}", mint_auth);
-        }else{
-            msg!("Nothing")
-        }
-        // msg!("token_mint: {:?}, presale_account{:?}",ctx.accounts.token_mint.to_account_info(), ctx.accounts.presale_account.to_account_info());
+        // msg!("bump details: {}", ctx.accounts.presale_account.bump);
+        // msg!("bump details: {}", ctx.bumps.presale_account);
+
+        // msg!("Minting to presale-pool");
+        // msg!("{:?}", ctx.accounts.token_mint.to_account_info());
+        // if let COption::Some(mint_auth) = ctx.accounts.token_mint.mint_authority{
+        //     msg!("{:?}", ctx.accounts.presale_account.to_account_info());
+        //     msg!("{:?}", mint_auth);
+        // }else{
+        //     msg!("Nothing")
+        // }
         mint_to(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
@@ -116,6 +118,7 @@ pub mod hypernova {
         presale_info.min_purchase = min_purchase;
         presale_info.max_purchase = max_purchase;
         presale_info.bump = ctx.bumps.presale_account;
+        msg!("{:?}",ctx.accounts.presale_account.to_account_info());
 
         Ok(())
     }
@@ -165,19 +168,23 @@ pub mod hypernova {
             ],
         )?;
 
-        let presale_seeds = &[b"presale".as_ref(), presale_key.as_ref(), &[presale_bump]];
-        let signer = &[&presale_seeds[..]];
+        let binding = ctx.accounts.presale_account.developer.key();
+        let signer_seeds: [&[&[u8]]; 1] = [&[
+            b"presale",
+            binding.as_ref(),
+            &[ctx.accounts.presale_account.bump],
+        ]];
 
         transfer_checked(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
                 TransferChecked {
                     from: ctx.accounts.presale_pool_account.to_account_info(),
-                    to: ctx.accounts.user_token_account.to_account_info(),
+                    to: ctx.accounts.user.to_account_info(),
                     authority: ctx.accounts.presale_account.to_account_info(),
                     mint: ctx.accounts.token_mint.to_account_info(),
                 },
-                signer,
+                &signer_seeds,
             ),
             tokens_to_purchase,
             ctx.accounts.token_mint.decimals,
@@ -260,20 +267,23 @@ pub struct PurchaseTokens<'info> {
     pub presale_pool_account: InterfaceAccount<'info, TokenAccount>,
 
     #[account(
-        mut,
-        associated_token::mint = presale_account.token_mint,
+        init_if_needed,
+        payer = user,
+        associated_token::mint = token_mint,
         associated_token::authority = user
     )]
     pub user_token_account: InterfaceAccount<'info, TokenAccount>,
 
+    // This account must match the one stored on the presale account.
     #[account(
-        address = presale_account.token_mint
+        constraint = token_mint.key() == presale_account.token_mint,
     )]
-    pub token_mint: InterfaceAccount<'info, Mint>,
+    pub token_mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(mut)]
     pub presale_vault: SystemAccount<'info>,
 
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
 }

@@ -550,8 +550,7 @@ export type Hypernova = {
               },
               {
                 "kind": "account",
-                "path": "presale_account.token_mint",
-                "account": "presaleInfo"
+                "path": "tokenMint"
               }
             ],
             "program": {
@@ -599,6 +598,10 @@ export type Hypernova = {
         {
           "name": "presaleVault",
           "writable": true
+        },
+        {
+          "name": "associatedTokenProgram",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
           "name": "tokenProgram"
