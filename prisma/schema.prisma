@@ -22,17 +22,17 @@ model User {
 }
 
 model Token {
-  id Int @id @unique
+  id Int @id @default(autoincrement())
   name String
   symbol String
   url String
   userId Int
   user User @relation(fields: [userId], references: [id])
-  website String
-  twitter String
-  supply String
+  website String?
+  twitter String?
+  supply String?
   mint String
-  presalePool String
-  liquidiyPool String
-  vault String
+  presalePool String?
+  liquidityPool String?
+  vault String?
 }
