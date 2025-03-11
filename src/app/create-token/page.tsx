@@ -1,18 +1,41 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { TokenHeader } from "@/components/token-header"
-import { ArrowLeft, Upload } from "lucide-react"
+import { useState } from "react";
+import Link from "next/link";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TokenHeader } from "@/components/token-header";
+import { ArrowLeft, Upload } from "lucide-react";
+import {
+  TOKEN_2022_PROGRAM_ID,
+  getMintLen,
+  createInitializeMetadataPointerInstruction,
+  createInitializeMintInstruction,
+  TYPE_SIZE,
+  LENGTH_SIZE,
+  ExtensionType,
+} from "@solana/spl-token";
+import {
+  Keypair,
+  SystemProgram,
+  Transaction,
+} from "@solana/web3.js";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { generatePDA } from "@/lib/utils";
+import { createInitializeInstruction, pack } from "@solana/spl-token-metadata";
 
 const tokenFormSchema = z.object({
   name: z.string().min(3, {
@@ -26,12 +49,19 @@ const tokenFormSchema = z.object({
     .max(8, {
       message: "Max 8 characters",
     }),
-  decimals: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 0 && Number(val) <= 18, {
-    message: "0-18 only",
-  }),
-  totalSupply: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
-    message: "Must be positive",
-  }),
+  decimals: z
+    .number()
+    .min(0, {
+      message: "decimals should be between 0 to 8",
+    })
+    .max(8, {
+      message: "decimals should be between 0 to 8",
+    }),
+  totalSupply: z
+    .string()
+    .refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
+      message: "Must be positive",
+    }),
   description: z
     .string()
     .min(10, {
@@ -46,37 +76,100 @@ const tokenFormSchema = z.object({
   tokenType: z.string({
     required_error: "Required",
   }),
-  logo: z.string().optional(),
-})
+  uri: z.string({
+    required_error: "Reqired"
+  }).url({
+    message: "Enter valid url"
+  }),
+  // logo: z.string().optional(),
+});
 
 export default function CreateToken() {
-  const [activeTab, setActiveTab] = useState("token-details")
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [activeTab, setActiveTab] = useState("token-details");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const wallet = useWallet();
+  const { connection } = useConnection();
 
   const form = useForm<z.infer<typeof tokenFormSchema>>({
     resolver: zodResolver(tokenFormSchema),
     defaultValues: {
       name: "",
       symbol: "",
-      decimals: "18",
+      decimals: 5,
       totalSupply: "",
       description: "",
       blockchain: "",
       tokenType: "",
-      logo: "",
+      uri: "",
     },
-  })
+  });
 
-  function onSubmit(values: z.infer<typeof tokenFormSchema>) {
-    setIsSubmitting(true)
-    console.log(values)
+  async function onSubmit(values: z.infer<typeof tokenFormSchema>) {
+    setIsSubmitting(true);
+    console.log("Sumit cliecked")
+    try {
+      console.log(values);
+      if (wallet.publicKey) {
+        // !TODO Store this to db with success and failure record
+        const keypair = Keypair.generate(); // This will be Token mint 
+        const metadata = {
+          mint: keypair.publicKey,
+          name: values.name,
+          symbol: values.symbol,
+          uri: values.uri,
+          additionalMetadata: [],
+        };
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false)
-      // Navigate to success page or show success message
-      alert("Token created successfully!")
-    }, 2000)
+
+        const { pda } = generatePDA("presale", keypair.publicKey); // This will be mintAuthority
+        const mintLen = getMintLen([ExtensionType.MetadataPointer]);
+        const metadataLen = TYPE_SIZE + LENGTH_SIZE + pack(metadata).length;
+        const lamports = await connection.getMinimumBalanceForRentExemption(mintLen + metadataLen);
+
+        const transaction = new Transaction();
+        transaction.add(
+          SystemProgram.createAccount({
+            fromPubkey: wallet.publicKey,
+            newAccountPubkey: keypair.publicKey,
+            space: mintLen,
+            lamports,
+            programId: TOKEN_2022_PROGRAM_ID,
+          }),
+          createInitializeMetadataPointerInstruction(keypair.publicKey, pda, keypair.publicKey, TOKEN_2022_PROGRAM_ID),
+          createInitializeMintInstruction(keypair.publicKey, values.decimals, pda, pda, TOKEN_2022_PROGRAM_ID),
+          createInitializeInstruction({
+            programId: TOKEN_2022_PROGRAM_ID,
+            mint: keypair.publicKey,
+            metadata: keypair.publicKey,
+            name: metadata.name,
+            symbol: metadata.symbol,
+            uri: metadata.uri,
+            mintAuthority: pda,
+            updateAuthority: pda,
+          })
+        );
+
+        transaction.feePayer = wallet.publicKey;
+        transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+        console.log("Build Transations Success", transaction);
+
+        transaction.partialSign(keypair);
+        console.log("Partial Sign Confirmed",transaction);
+        console.log("connection",connection);
+
+
+        let tx = await wallet.sendTransaction(transaction, connection);
+        console.log("tx", tx);
+
+      } else {
+        alert("Please Connect Your wallet");
+      }
+    } catch (err) {
+       console.log("Errorr in creating token", err)
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -95,7 +188,11 @@ export default function CreateToken() {
           </div>
 
           <div className="mx-auto max-w-2xl">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="token-details">Details</TabsTrigger>
                 <TabsTrigger value="presale-config">Presale</TabsTrigger>
@@ -104,20 +201,33 @@ export default function CreateToken() {
 
               <TabsContent value="token-details" className="mt-6">
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <form
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    className="space-y-6"
+                  >
                     <div className="space-y-4">
-                      <div className="flex flex-col items-center justify-center space-y-2 p-4 border border-neutral-800 rounded-lg">
+                      {/* <div
+                        onClick={() => document.getElementById("logo")?.click()}
+                        className="flex flex-col items-center justify-center space-y-2 p-4 border border-neutral-800 rounded-lg cursor-pointer"
+                      >
                         <div className="w-16 h-16 rounded-full bg-neutral-900 flex items-center justify-center">
                           <Upload className="h-6 w-6 text-muted-foreground" />
                         </div>
                         <div className="text-center">
-                          <FormLabel htmlFor="logo" className="cursor-pointer text-primary text-xs">
+                          <FormLabel
+                            htmlFor="logo"
+                            className="cursor-pointer text-primary text-xs"
+                          >
                             Upload Logo
                           </FormLabel>
-                          <Input id="logo" type="file" className="hidden" accept="image/*" />
+                          <Input
+                            id="logo"
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                          />
                         </div>
-                      </div>
-
+                      </div> */}
                       <FormField
                         control={form.control}
                         name="name"
@@ -131,7 +241,19 @@ export default function CreateToken() {
                           </FormItem>
                         )}
                       />
-
+                      <FormField
+                        control={form.control}
+                        name="uri"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>URI</FormLabel>
+                            <FormControl>
+                              <Input placeholder="uri" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       <FormField
                         control={form.control}
                         name="symbol"
@@ -145,7 +267,6 @@ export default function CreateToken() {
                           </FormItem>
                         )}
                       />
-
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
@@ -175,7 +296,6 @@ export default function CreateToken() {
                           )}
                         />
                       </div>
-
                       <FormField
                         control={form.control}
                         name="description"
@@ -193,62 +313,13 @@ export default function CreateToken() {
                           </FormItem>
                         )}
                       />
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="blockchain"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Blockchain</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="ethereum">Ethereum</SelectItem>
-                                  <SelectItem value="bsc">BSC</SelectItem>
-                                  <SelectItem value="polygon">Polygon</SelectItem>
-                                  <SelectItem value="avalanche">Avalanche</SelectItem>
-                                  <SelectItem value="solana">Solana</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="tokenType"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Token Type</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="standard">Standard</SelectItem>
-                                  <SelectItem value="mintable">Mintable</SelectItem>
-                                  <SelectItem value="burnable">Burnable</SelectItem>
-                                  <SelectItem value="capped">Capped</SelectItem>
-                                  <SelectItem value="reflection">Reflection</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
                     </div>
 
                     <div className="flex justify-end">
-                      <Button type="button" onClick={() => setActiveTab("presale-config")}>
+                      <Button
+                        type="button"
+                        onClick={() => setActiveTab("presale-config")}
+                      >
                         Continue
                       </Button>
                     </div>
@@ -259,21 +330,34 @@ export default function CreateToken() {
               <TabsContent value="presale-config" className="mt-6">
                 <div className="space-y-6">
                   <div className="bg-neutral-900 p-4 rounded-lg">
-                    <h3 className="text-sm font-medium">Presale Configuration</h3>
-                    <p className="text-xs text-muted-foreground mt-1">Set pricing, caps, and timeline</p>
+                    <h3 className="text-sm font-medium">
+                      Presale Configuration
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Set pricing, caps, and timeline
+                    </p>
                   </div>
 
                   {/* Presale form fields would go here */}
                   <div className="space-y-6">
                     {/* This is a placeholder for the presale configuration form */}
-                    <p className="text-center text-muted-foreground py-8 text-sm">Presale configuration form</p>
+                    <p className="text-center text-muted-foreground py-8 text-sm">
+                      Presale configuration form
+                    </p>
                   </div>
 
                   <div className="flex justify-between">
-                    <Button type="button" variant="outline" onClick={() => setActiveTab("token-details")}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setActiveTab("token-details")}
+                    >
                       Back
                     </Button>
-                    <Button type="button" onClick={() => setActiveTab("review")}>
+                    <Button
+                      type="button"
+                      onClick={() => setActiveTab("review")}
+                    >
                       Continue
                     </Button>
                   </div>
@@ -284,7 +368,9 @@ export default function CreateToken() {
                 <div className="space-y-6">
                   <div className="bg-neutral-900 p-4 rounded-lg">
                     <h3 className="text-sm font-medium">Review</h3>
-                    <p className="text-xs text-muted-foreground mt-1">Verify details before deployment</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Verify details before deployment
+                    </p>
                   </div>
 
                   <div className="space-y-4 text-sm">
@@ -298,7 +384,9 @@ export default function CreateToken() {
                         <p>{form.watch("symbol") || "-"}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">Decimals</p>
+                        <p className="text-xs text-muted-foreground">
+                          Decimals
+                        </p>
                         <p>{form.watch("decimals") || "-"}</p>
                       </div>
                       <div>
@@ -306,25 +394,43 @@ export default function CreateToken() {
                         <p>{form.watch("totalSupply") || "-"}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">Blockchain</p>
-                        <p className="capitalize">{form.watch("blockchain") || "-"}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Blockchain
+                        </p>
+                        <p className="capitalize">
+                          {form.watch("blockchain") || "-"}
+                        </p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">Type</p>
-                        <p className="capitalize">{form.watch("tokenType") || "-"}</p>
+                        <p className="capitalize">
+                          {form.watch("tokenType") || "-"}
+                        </p>
                       </div>
                     </div>
 
                     <div className="mt-4">
-                      <p className="text-xs text-muted-foreground">Description</p>
-                      <p className="text-xs">{form.watch("description") || "-"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Description
+                      </p>
+                      <p className="text-xs">
+                        {form.watch("description") || "-"}
+                      </p>
                     </div>
 
                     <div className="flex justify-between mt-8">
-                      <Button type="button" variant="outline" onClick={() => setActiveTab("presale-config")}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setActiveTab("presale-config")}
+                      >
                         Back
                       </Button>
-                      <Button type="button" onClick={form.handleSubmit(onSubmit)} disabled={isSubmitting}>
+                      <Button
+                        type="button"
+                        onClick={form.handleSubmit(onSubmit)}
+                        disabled={isSubmitting}
+                      >
                         {isSubmitting ? "Deploying..." : "Deploy"}
                       </Button>
                     </div>
@@ -336,6 +442,5 @@ export default function CreateToken() {
         </div>
       </main>
     </div>
-  )
+  );
 }
-
