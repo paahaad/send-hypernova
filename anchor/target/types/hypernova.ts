@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/hypernova.json`.
  */
 export type Hypernova = {
-  "address": "coUnmi3oBUtwtd9fjeAvSsJssXh5A5xyPbhpewyzRVF",
+  "address": "ChsLbPE12EHPaABRUtTJUNPwa4oi7Pm9TipwFD65Z31k",
   "metadata": {
     "name": "hypernova",
     "version": "0.1.0",
@@ -14,22 +14,76 @@ export type Hypernova = {
   },
   "instructions": [
     {
-      "name": "initiatePresale",
+      "name": "createToken",
       "discriminator": [
-        163,
-        65,
-        42,
-        177,
-        130,
-        125,
-        212,
-        141
+        84,
+        52,
+        204,
+        228,
+        24,
+        140,
+        234,
+        75
       ],
       "accounts": [
         {
-          "name": "developer",
+          "name": "payer",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "mintAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "payer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "metadataAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "tokenMetadataProgram"
+              },
+              {
+                "kind": "account",
+                "path": "mintAccount"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "tokenMetadataProgram"
+            }
+          }
         },
         {
           "name": "presaleAccount",
@@ -50,292 +104,21 @@ export type Hypernova = {
               },
               {
                 "kind": "account",
-                "path": "developer"
+                "path": "mintAccount"
               }
             ]
           }
         },
         {
-          "name": "tokenMint",
-          "writable": true,
-          "signer": true
+          "name": "presaleVault"
         },
         {
-          "name": "presalePoolAccount",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "presaleAccount"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "tokenMint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "lpPoolAccount",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "presaleAccount"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "tokenMint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "developerAccount",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "presaleAccount"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "tokenMint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "tokenProgram"
-        },
-        {
-          "name": "associatedTokenProgram",
-          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+          "name": "tokenMetadataProgram",
+          "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
         },
         {
           "name": "systemProgram",
@@ -348,30 +131,6 @@ export type Hypernova = {
       ],
       "args": [
         {
-          "name": "name",
-          "type": "string"
-        },
-        {
-          "name": "symbol",
-          "type": "string"
-        },
-        {
-          "name": "decimals",
-          "type": "u8"
-        },
-        {
-          "name": "totalSupply",
-          "type": "u64"
-        },
-        {
-          "name": "presalePercentage",
-          "type": "u8"
-        },
-        {
-          "name": "tokenPrice",
-          "type": "u64"
-        },
-        {
           "name": "startTime",
           "type": "i64"
         },
@@ -380,45 +139,86 @@ export type Hypernova = {
           "type": "i64"
         },
         {
+          "name": "ticker",
+          "type": "i64"
+        },
+        {
+          "name": "tokenName",
+          "type": "string"
+        },
+        {
+          "name": "tokenSymbol",
+          "type": "string"
+        },
+        {
+          "name": "tokenUri",
+          "type": "string"
+        },
+        {
+          "name": "totalSupply",
+          "type": "u64"
+        },
+        {
+          "name": "tokenPrice",
+          "type": "u64"
+        },
+        {
           "name": "minPurchase",
           "type": "u64"
         },
         {
           "name": "maxPurchase",
           "type": "u64"
+        },
+        {
+          "name": "presalePercentage",
+          "type": "i8"
         }
       ]
     },
     {
-      "name": "purchaseTokens",
+      "name": "mintToken",
       "discriminator": [
-        142,
-        1,
-        16,
-        160,
-        115,
-        120,
-        55,
-        254
+        172,
+        137,
+        183,
+        14,
+        207,
+        110,
+        234,
+        56
       ],
       "accounts": [
         {
-          "name": "user",
+          "name": "payer",
           "writable": true,
           "signer": true
         },
         {
-          "name": "presaleAccount",
-          "writable": true
+          "name": "mintAccount",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              }
+            ]
+          }
         },
         {
-          "name": "presalePoolAccount",
+          "name": "associatedTokenAccount",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "presaleAccount"
+                "path": "payer"
               },
               {
                 "kind": "const",
@@ -459,8 +259,7 @@ export type Hypernova = {
               },
               {
                 "kind": "account",
-                "path": "presale_account.token_mint",
-                "account": "presaleInfo"
+                "path": "mintAccount"
               }
             ],
             "program": {
@@ -503,108 +302,12 @@ export type Hypernova = {
           }
         },
         {
-          "name": "userTokenAccount",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "user"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "tokenMint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "tokenMint"
-        },
-        {
-          "name": "presaleVault",
-          "writable": true
+          "name": "tokenProgram",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "associatedTokenProgram",
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-        },
-        {
-          "name": "tokenProgram"
         },
         {
           "name": "systemProgram",
@@ -613,7 +316,7 @@ export type Hypernova = {
       ],
       "args": [
         {
-          "name": "solAmount",
+          "name": "amount",
           "type": "u64"
         }
       ]
@@ -688,6 +391,18 @@ export type Hypernova = {
         "kind": "struct",
         "fields": [
           {
+            "name": "startTime",
+            "type": "i64"
+          },
+          {
+            "name": "endTime",
+            "type": "i64"
+          },
+          {
+            "name": "ticker",
+            "type": "i64"
+          },
+          {
             "name": "tokenMint",
             "type": "pubkey"
           },
@@ -696,7 +411,7 @@ export type Hypernova = {
             "type": "u64"
           },
           {
-            "name": "presaleAmount",
+            "name": "available",
             "type": "u64"
           },
           {
@@ -706,14 +421,6 @@ export type Hypernova = {
           {
             "name": "developer",
             "type": "pubkey"
-          },
-          {
-            "name": "startTime",
-            "type": "i64"
-          },
-          {
-            "name": "endTime",
-            "type": "i64"
           },
           {
             "name": "minPurchase",
@@ -726,6 +433,10 @@ export type Hypernova = {
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "vault",
+            "type": "pubkey"
           }
         ]
       }

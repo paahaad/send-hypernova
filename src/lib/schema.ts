@@ -13,17 +13,16 @@ export const tokenFormSchema = z.object({
       message: "Max 8 characters",
     }),
   decimals: z
-    .number()
-    .min(0, {
-      message: "decimals should be between 0 to 8",
-    })
-    .max(8, {
-      message: "decimals should be between 0 to 8",
+    .string()
+    .transform(Number)
+    .refine((val) => !isNaN(val) && val >= 0 && val <= 8, {
+      message: "Decimals should be between 0 to 8",
     }),
   totalSupply: z
     .string()
-    .refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
-      message: "Must be positive",
+    .transform(Number)
+    .refine((val) => val > 0, {
+      message: "Must be a positive number",
     }),
   description: z
     .string()
@@ -41,10 +40,51 @@ export const tokenFormSchema = z.object({
   }),
   uri: z
     .string({
-      required_error: "Reqired",
+      required_error: "Required",
     })
     .url({
-      message: "Enter valid url",
+      message: "Enter a valid URL",
     }),
-  // logo: z.string().optional(),
+  startTime: z
+    .string()
+    .transform(Number)
+    .refine((val) => !isNaN(val), {
+      message: "Invalid number",
+    }),
+  endTime: z
+    .string()
+    .transform(Number)
+    .refine((val) => !isNaN(val), {
+      message: "Invalid number",
+    }),
+  ticker: z
+    .string()
+    .transform(Number)
+    .refine((val) => !isNaN(val), {
+      message: "Invalid number",
+    }),
+  tokenPrice: z
+    .string()
+    .transform(Number)
+    .refine((val) => val > 0, {
+      message: "Must be a positive number",
+    }),
+  minPurchase: z
+    .string()
+    .transform(Number)
+    .refine((val) => val > 0, {
+      message: "Must be a positive number",
+    }),
+  maxPurchase: z
+    .string()
+    .transform(Number)
+    .refine((val) => val > 0, {
+      message: "Must be a positive number",
+    }),
+  presalePercentage: z
+    .string()
+    .transform(Number)
+    .refine((val) => val >= 0 && val <= 100, {
+      message: "Must be between 0 and 100",
+    }),
 });

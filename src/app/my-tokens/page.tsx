@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,9 +9,13 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { TokenHeader } from "@/components/token-header"
 import { ArrowUpRight, Clock, Coins, Edit, ExternalLink, Plus, Rocket, Settings } from "lucide-react"
+import { useWallet } from "@solana/wallet-adapter-react"
 
 export default function MyTokensPage() {
+  let wallet = useWallet();
   const [isConnected, setIsConnected] = useState(false)
+
+  useEffect(()=>setIsConnected(!!wallet.publicKey),[wallet])
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -23,12 +27,6 @@ export default function MyTokensPage() {
               <h1 className="text-3xl font-bold tracking-tight">My Tokens</h1>
               <p className="text-muted-foreground">Manage your created tokens and presales</p>
             </div>
-            <Button asChild>
-              <Link href="/create-token">
-                <Plus className="mr-2 h-4 w-4" />
-                Create New Token
-              </Link>
-            </Button>
           </div>
 
           {!isConnected ? (
@@ -90,9 +88,6 @@ function TokenCard({ token }: any) {
               <CardDescription>{token.symbol}</CardDescription>
             </div>
           </div>
-          <Badge variant="outline" className="capitalize">
-            {token.blockchain}
-          </Badge>
         </div>
       </CardHeader>
       <CardContent>
@@ -210,7 +205,6 @@ const myTokens = [
     name: "My DeFi Token",
     symbol: "MDT",
     logo: "/placeholder.svg?height=40&width=40",
-    blockchain: "ethereum",
     totalSupply: "1,000,000",
     decimals: "18",
     type: "standard",
@@ -221,7 +215,16 @@ const myTokens = [
     name: "Gaming Platform",
     symbol: "GPT",
     logo: "/placeholder.svg?height=40&width=40",
-    blockchain: "polygon",
+    totalSupply: "500,000",
+    decimals: "18",
+    type: "mintable",
+    created: "1 week ago",
+  },
+  {
+    id: 3,
+    name: "Nova Platform",
+    symbol: "NPT",
+    logo: "/placeholder.svg?height=40&width=40",
     totalSupply: "500,000",
     decimals: "18",
     type: "mintable",
@@ -248,6 +251,20 @@ const myPresales = [
     id: 2,
     name: "Gaming Platform",
     symbol: "GPT",
+    logo: "/placeholder.svg?height=40&width=40",
+    status: "upcoming",
+    progress: 0,
+    softCap: "50,000",
+    hardCap: "200,000",
+    raised: "0",
+    currency: "USDT",
+    price: "500",
+    endsIn: "Starts in 3 days",
+  },
+  {
+    id: 3,
+    name: "Nova Platform",
+    symbol: "NVA",
     logo: "/placeholder.svg?height=40&width=40",
     status: "upcoming",
     progress: 0,
