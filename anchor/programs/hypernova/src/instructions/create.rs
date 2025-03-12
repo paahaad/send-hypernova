@@ -12,6 +12,7 @@ use {
 };
 
 #[derive(Accounts)]
+#[instruction(id: u64)]
 pub struct CreateToken<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -20,7 +21,7 @@ pub struct CreateToken<'info> {
     // Same PDA as address of the account and mint/freeze authority
     #[account(
         init,
-        seeds = [b"mint", payer.key().as_ref()],
+        seeds = [b"mint", payer.key().as_ref(), id.to_le_bytes().as_ref()],
         bump,
         payer = payer,
         mint::decimals = 9,
@@ -48,8 +49,6 @@ pub struct CreateToken<'info> {
     )]
     pub presale_account: Box<Account<'info, PresaleInfo>>,
 
-    pub presale_vault: SystemAccount<'info>,
-
     pub token_program: Program<'info, Token>,
     pub token_metadata_program: Program<'info, Metadata>,
     pub system_program: Program<'info, System>,
@@ -58,6 +57,7 @@ pub struct CreateToken<'info> {
 
 pub fn create_token(
     ctx: Context<CreateToken>,
+    id: u64,
     start_time: i64,
     end_time: i64,
     ticker: i64,
@@ -85,9 +85,11 @@ pub fn create_token(
     msg!("Creating metadata account");
 
     // PDA signer seeds
+    let binding = id.to_le_bytes();
     let signer_seeds: &[&[&[u8]]] = &[&[
         b"mint",
         ctx.accounts.payer.to_account_info().key.as_ref(),
+        binding.as_ref(),
         &[ctx.bumps.mint_account],
     ]];
 
@@ -137,7 +139,10 @@ pub fn create_token(
     presale_info.min_purchase = max_purchase;
     presale_info.bump = ctx.bumps.presale_account;
 
-    presale_info.vault = ctx.accounts.presale_vault.key();
+    presale_info.vault = Pubkey::try_from("2P2HLwVkfrzLNzFVxC91ek8dC6e2C6n25zDoY5vU5g9S").unwrap();
+    presale_info.associated_token_presale = Pubkey::try_from("2P2HLwVkfrzLNzFVxC91ek8dC6e2C6n25zDoY5vU5g9S").unwrap();
+    presale_info.asociate_token_lp = Pubkey::try_from("2P2HLwVkfrzLNzFVxC91ek8dC6e2C6n25zDoY5vU5g9S").unwrap();
+
 
     msg!("Token created successfully.");
 

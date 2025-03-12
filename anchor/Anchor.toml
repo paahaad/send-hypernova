@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-hypernova = "ChsLbPE12EHPaABRUtTJUNPwa4oi7Pm9TipwFD65Z31k"
+hypernova = "Hcsbn6KE28BXdw73owKoHvmiw1Vmd7kWo1WNXomZ5kCb"
 
 [registry]
 url = "https://api.apr.dev"

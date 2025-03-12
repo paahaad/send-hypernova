@@ -17,5 +17,7 @@ pub struct PresaleInfo {
     pub max_purchase: u64,
     pub bump: u8,
 
-    pub vault: Pubkey
+    pub vault: Pubkey,
+    pub associated_token_presale: Pubkey,
+    pub asociate_token_lp: Pubkey,
 }
