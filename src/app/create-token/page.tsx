@@ -18,21 +18,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TokenHeader } from "@/components/token-header";
-import { ArrowLeft, Upload } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import {
-  TOKEN_2022_PROGRAM_ID,
-  getMintLen,
-  createInitializeMetadataPointerInstruction,
-  createInitializeMintInstruction,
-  TYPE_SIZE,
-  LENGTH_SIZE,
-  ExtensionType,
-} from "@solana/spl-token";
-import {
-  Keypair,
   PublicKey,
-  Signer,
   SystemProgram,
+  SYSVAR_RENT_PUBKEY,
   Transaction,
 } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
@@ -43,6 +33,7 @@ import { PROGRAM_ID, VAULT } from "@/lib/constants";
 import { useAnchorProvider } from "@/components/solana-provider";
 import { getHypernovaProgram } from "@project/anchor";
 import { BN } from "bn.js";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 export default function CreateToken() {
   const wallet = useWallet();
@@ -158,17 +149,28 @@ export default function CreateToken() {
   async function onSubmit(values: z.infer<typeof tokenFormSchema>) {
     try {
       if (!wallet.publicKey) {
+        alert("Connect Wallet")
         return;
       }
       setIsSubmitting(true);
       // create mint with onchain smart contract
+      const id = Math.floor(1 + Math.random() * 9);
+
       const [mintPDA] = PublicKey.findProgramAddressSync(
-        [Buffer.from("mint"), wallet.publicKey.toBuffer()],
+        [Buffer.from("mint"), wallet.publicKey.toBuffer(), new BN(id).toArrayLike(Buffer, "le", 8)],
         program.programId
       );
-
-      let tx = await program.methods
+      
+      
+      const [presalePDA] = PublicKey.findProgramAddressSync(
+        [Buffer.from("presale"), mintPDA.toBuffer()],
+        program.programId
+      );
+      
+      // const transaction = new Transaction();
+      let tx1 = await program.methods
         .createToken(
+          new BN(id),
           new BN(values.startTime),
           new BN(values.endTime),
           new BN(values.ticker),
@@ -183,14 +185,49 @@ export default function CreateToken() {
         )
         .accounts({
           payer: wallet.publicKey as PublicKey,
-          presaleVault: VAULT,
+        })
+        .transaction();
+        
+      let transaction1Signature = await wallet.sendTransaction(tx1, connection);
+      console.log("Success!");
+      console.log(`   Mint Address: ${mintPDA}`);
+      console.log(`   Transaction Signature: ${transaction1Signature}`);
+
+      // Mint token to ATA. 1. presaleATA, LP, Developer
+      // Get associated token accounts
+      const associatedTokenAccount = await getAssociatedTokenAddress(
+        mintPDA,
+        wallet.publicKey
+      );
+
+      const associatedTokenPresale = await getAssociatedTokenAddress(
+        mintPDA,
+        mintPDA,
+        true // allowOwnerOffCurve = true since mint PDA is not an ed25519 keypair
+      );
+
+      const tx2 = await program.methods
+      .mintToken(
+        new BN(id),
+      )
+      .accounts({
+        payer: wallet.publicKey
         })
         .transaction();
 
-      let transactionSignature = await wallet.sendTransaction(tx, connection);
-      console.log("Success!");
-      console.log(`   Mint Address: ${mintPDA}`);
-      console.log(`   Transaction Signature: ${transactionSignature}`);
+      let transaction2Signature = await wallet.sendTransaction(tx2, connection);
+
+      console.log('Success!');
+      console.log(`   Transaction Signature: ${transaction2Signature}`);// get presaleInfo
+
+      console.log(`   DEV Associated Token Account Address: ${associatedTokenAccount}`);
+
+      let presaleAccount = await program.account.presaleInfo.fetch(presalePDA)
+      console.log(`  Presale Account associatedTokenPresale Details:`, presaleAccount.associatedTokenPresale.toBase58());
+      console.log(`  Presale Account Details:`, presaleAccount);
+      
+
+      
 
       // Store this Mint Address to DB
       await createToken(
@@ -206,7 +243,12 @@ export default function CreateToken() {
       // console.log("mintAccount", mintAccount);
 
       // create presale valut
-    } catch (err) {}
+    } catch (err) {
+      console.log("error in sending transaction", err)
+    }
+    finally{
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -430,7 +472,7 @@ export default function CreateToken() {
                             name="minPurchase"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Max Purchase</FormLabel>
+                                <FormLabel>Min Purchase</FormLabel>
                                 <FormControl>
                                   <Input {...field} />
                                 </FormControl>
