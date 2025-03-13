@@ -81,16 +81,15 @@ body {
 .wallet-adapter-button-trigger {
   all: unset !important; /* Reset all default styles */
   display: flex !important;
-  border: 2px solid rgb(223, 175, 175) !important;
-  color: black !important;
+  border: 1px solid hsl(var(--border)) !important;
+  color:  hsl(var(--foreground))!important;
   border-radius: 6px !important; /* Match ShadCN rounded corners */
-  background-color: white !important; /* Ensure background consistency */
+  background-color: hsl(var(--background)) !important; /* Ensure background consistency */
   transition: all 0.2s ease-in-out !important;
   height: 1.5rem !important;
   padding: 0.5rem 1rem !important;
 }
 
 .wallet-adapter-button-trigger:hover {
-  background-color: rgb(223, 175, 175) !important;
-  color: white !important;
+  cursor: pointer !important;
 }

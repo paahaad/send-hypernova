@@ -3,18 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Coins, Menu, LogOut, Wallet, Plus } from "lucide-react";
 import { WalletButton } from "./solana-provider";
 
 export function TokenHeader() {
-  const [isConnected, setIsConnected] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-neutral-800 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -34,16 +27,16 @@ export function TokenHeader() {
                   className="flex items-center gap-2 text-lg font-semibold"
                 >
                   <Coins className="h-5 w-5" />
-                  <span>TokenLaunch</span>
+                  <span>Hypernova</span>
                 </Link>
-                <Link href="/" className="hover:text-foreground/80">
-                  Home
+                <Link href="/swap" className="hover:text-foreground/80">
+                  Swap
                 </Link>
-                <Link href="/presales" className="hover:text-foreground/80">
-                  Presales
+                <Link href="/launch" className="hover:text-foreground/80">
+                  Launch
                 </Link>
-                <Link href="/create-token" className="hover:text-foreground/80">
-                  Create
+                <Link href="/liquidity" className="hover:text-foreground/80">
+                  Liquidity
                 </Link>
                 <Link href="/my-tokens" className="hover:text-foreground/80">
                   My Tokens
@@ -60,55 +53,27 @@ export function TokenHeader() {
           </Link>
           <nav className="hidden md:flex items-center gap-6 text-sm">
             <Link
-              href="/"
+              href="/swap"
               className="font-medium transition-colors hover:text-foreground/80"
             >
-              Home
+              Swap
             </Link>
             <Link
-              href="/presales"
+              href="/launch"
               className="font-medium transition-colors hover:text-foreground/80"
             >
-              Presales
+              Launch
             </Link>
             <Link
-              href="/my-tokens"
+              href="/liquidity"
               className="font-medium transition-colors hover:text-foreground/80"
             >
-              My Tokens
+              Liquidity
             </Link>
           </nav>
         </div>
         <div className="flex items-center gap-2">
-          {isConnected ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="flex items-center gap-2 text-xs h-8 border-neutral-700"
-                >
-                  <Wallet className="h-3 w-3" />
-                  <span className="hidden sm:inline-block">0x1a2b...3c4d</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="bg-background border-neutral-800"
-              >
-                <DropdownMenuItem onClick={() => setIsConnected(false)}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Disconnect</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-              <WalletButton />
-          )}
-          <Button asChild size="sm" variant="ghost" className="h-8">
-            <Link href="/create-token">
-              <Plus className="h-4 w-4" />
-            </Link>
-          </Button>
+          <WalletButton />
         </div>
       </div>
     </header>

@@ -1,77 +1,92 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { TokenHeader } from "@/components/token-header"
-import { ArrowUpRight, Clock, Coins, Edit, ExternalLink, Plus, Rocket, Settings } from "lucide-react"
-import { useWallet } from "@solana/wallet-adapter-react"
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { TokenHeader } from "@/components/token-header";
+import {
+  ArrowUpRight,
+  Clock,
+  Coins,
+  Edit,
+  ExternalLink,
+  Plus,
+  Rocket,
+  Settings,
+} from "lucide-react";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 export default function MyTokensPage() {
   let wallet = useWallet();
-  const [isConnected, setIsConnected] = useState(false)
+  const [isConnected, setIsConnected] = useState(false);
 
-  useEffect(()=>setIsConnected(!!wallet.publicKey),[wallet])
+  useEffect(() => setIsConnected(!!wallet.publicKey), [wallet]);
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <TokenHeader />
-      <main className="flex-1 py-12">
-        <div className="w-full max-w-screen-2xl mx-auto px-4 md:px-8 lg:px-12">
-          <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">My Tokens</h1>
-              <p className="text-muted-foreground">Manage your created tokens and presales</p>
-            </div>
+    <main className="flex-1 py-12">
+      <div className="w-full max-w-screen-2xl mx-auto px-4 md:px-8 lg:px-12">
+        <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">My Tokens</h1>
+            <p className="text-muted-foreground">
+              Manage your created tokens and presales
+            </p>
           </div>
-
-          {!isConnected ? (
-            <div className="mt-12 flex flex-col items-center justify-center text-center">
-              <div className="rounded-full bg-muted p-6">
-                <Coins className="h-10 w-10 text-muted-foreground" />
-              </div>
-              <h2 className="mt-6 text-xl font-semibold">Connect Your Wallet</h2>
-              <p className="mt-2 max-w-md text-muted-foreground">
-                Connect your wallet to view and manage your tokens and presales
-              </p>
-              <Button className="mt-6" onClick={() => setIsConnected(true)}>
-                Connect Wallet
-              </Button>
-            </div>
-          ) : (
-            <Tabs defaultValue="tokens" className="mt-8">
-              <div className="flex justify-center mb-8">
-                <TabsList>
-                  <TabsTrigger value="tokens">My Tokens</TabsTrigger>
-                  <TabsTrigger value="presales">My Presales</TabsTrigger>
-                </TabsList>
-              </div>
-
-              <TabsContent value="tokens" className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {myTokens.map((token) => (
-                    <TokenCard key={token.id} token={token} />
-                  ))}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="presales" className="space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {myPresales.map((presale) => (
-                    <PresaleCard key={presale.id} presale={presale} />
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
-          )}
         </div>
-      </main>
-    </div>
-  )
+
+        {!isConnected ? (
+          <div className="mt-12 flex flex-col items-center justify-center text-center">
+            <div className="rounded-full bg-muted p-6">
+              <Coins className="h-10 w-10 text-muted-foreground" />
+            </div>
+            <h2 className="mt-6 text-xl font-semibold">Connect Your Wallet</h2>
+            <p className="mt-2 max-w-md text-muted-foreground">
+              Connect your wallet to view and manage your tokens and presales
+            </p>
+            <Button className="mt-6" onClick={() => setIsConnected(true)}>
+              Connect Wallet
+            </Button>
+          </div>
+        ) : (
+          <Tabs defaultValue="tokens" className="mt-8">
+            <div className="flex justify-center mb-8">
+              <TabsList>
+                <TabsTrigger value="tokens">My Tokens</TabsTrigger>
+                <TabsTrigger value="presales">My Presales</TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="tokens" className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {myTokens.map((token) => (
+                  <TokenCard key={token.id} token={token} />
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="presales" className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {myPresales.map((presale) => (
+                  <PresaleCard key={presale.id} presale={presale} />
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
+        )}
+      </div>
+    </main>
+  );
 }
 
 function TokenCard({ token }: any) {
@@ -81,7 +96,11 @@ function TokenCard({ token }: any) {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="w-10 h-10 rounded-full overflow-hidden">
-              <img src={token.logo || "/placeholder.svg"} alt={token.name} className="w-full h-full object-cover" />
+              <img
+                src={token.logo || "/placeholder.svg"}
+                alt={token.name}
+                className="w-full h-full object-cover"
+              />
             </div>
             <div>
               <CardTitle>{token.name}</CardTitle>
@@ -123,7 +142,7 @@ function TokenCard({ token }: any) {
         </Button>
       </CardFooter>
     </Card>
-  )
+  );
 }
 
 function PresaleCard({ presale }: any) {
@@ -133,7 +152,11 @@ function PresaleCard({ presale }: any) {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="w-10 h-10 rounded-full overflow-hidden">
-              <img src={presale.logo || "/placeholder.svg"} alt={presale.name} className="w-full h-full object-cover" />
+              <img
+                src={presale.logo || "/placeholder.svg"}
+                alt={presale.name}
+                className="w-full h-full object-cover"
+              />
             </div>
             <div>
               <CardTitle>{presale.name}</CardTitle>
@@ -141,11 +164,21 @@ function PresaleCard({ presale }: any) {
             </div>
           </div>
           <Badge
-            variant={presale.status === "active" ? "default" : presale.status === "upcoming" ? "outline" : "secondary"}
+            variant={
+              presale.status === "active"
+                ? "default"
+                : presale.status === "upcoming"
+                ? "outline"
+                : "secondary"
+            }
           >
             {presale.status === "active" && <Rocket className="mr-1 h-3 w-3" />}
-            {presale.status === "upcoming" && <Clock className="mr-1 h-3 w-3" />}
-            {presale.status === "completed" && <ArrowUpRight className="mr-1 h-3 w-3" />}
+            {presale.status === "upcoming" && (
+              <Clock className="mr-1 h-3 w-3" />
+            )}
+            {presale.status === "completed" && (
+              <ArrowUpRight className="mr-1 h-3 w-3" />
+            )}
             {presale.status.charAt(0).toUpperCase() + presale.status.slice(1)}
           </Badge>
         </div>
@@ -196,7 +229,7 @@ function PresaleCard({ presale }: any) {
         </Button>
       </CardFooter>
     </Card>
-  )
+  );
 }
 
 const myTokens = [
@@ -230,7 +263,7 @@ const myTokens = [
     type: "mintable",
     created: "1 week ago",
   },
-]
+];
 
 const myPresales = [
   {
@@ -275,5 +308,4 @@ const myPresales = [
     price: "500",
     endsIn: "Starts in 3 days",
   },
-]
-
+];

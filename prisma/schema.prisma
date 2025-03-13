@@ -26,13 +26,43 @@ model Token {
   name String
   symbol String
   url String
+  
   userId Int
   user User @relation(fields: [userId], references: [id])
+
   website String?
   twitter String?
   supply String?
-  mint String
-  presalePool String?
-  liquidityPool String?
-  vault String?
+
+  ticker Int
+  price Int
+  sale_start Int
+  sale_end Int
+  min_purchase Int
+  max_purchase Int
+  
+
+  token_mint String
+  associated_token_presale String?
 }
+
+
+// pub struct PresaleInfo {
+//     pub start_time: i64,
+//     pub end_time: i64,
+//     pub ticker: i64,
+
+//     pub token_mint: Pubkey,
+//     pub total_supply: u64,
+//     pub available: u64,
+//     pub token_price: u64,
+//     pub developer: Pubkey,
+    
+//     pub min_purchase: u64,
+//     pub max_purchase: u64,
+//     pub bump: u8,
+
+//     pub vault: Pubkey,
+//     pub associated_token_presale: Pubkey,
+//     pub asociate_token_lp: Pubkey,
+// }

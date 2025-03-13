@@ -88,3 +88,21 @@ export const tokenFormSchema = z.object({
       message: "Must be between 0 and 100",
     }),
 });
+
+
+export interface TokenDetails {
+  user: string; // wallet publicKey in base58 format
+  tokenName: string;
+  tokenSymbol: string;
+  tokenUrl: string;
+  
+  ticker: number;
+  price: number;
+  sale_start: number;
+  sale_end: number;
+  min_purchase: number;
+  max_purchase: number;
+  
+  token_min: string; // token_mint in base58 format
+  associated_token_presale?: string; // optional as per Prisma schema
+}
