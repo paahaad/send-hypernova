@@ -12,77 +12,64 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Rocket, Clock, CheckCircle, Search, ArrowLeft } from "lucide-react";
 import FilterComponent from "@/components/filter";
+import { getPresale } from "@/actions/presale";
+import { fetchMetadata } from "@/lib/utils";
 
 // Token data
-const tokens = [
-  {
-    id: "mvt",
-    name: "MVT",
-    logo: "/placeholder.svg?height=32&width=32",
-    raised: "340K",
-    currency: "USDT",
-    progress: 68,
-    hardCap: "500K",
-    price: "1:000",
-  },
-  {
-    id: "dfp",
-    name: "DFP",
-    logo: "/placeholder.svg?height=32&width=32",
-    raised: "84K",
-    currency: "USDT",
-    progress: 42,
-    hardCap: "200K",
-    price: "1:500",
-  },
-  {
-    id: "gfw",
-    name: "GFW",
-    logo: "/placeholder.svg?height=32&width=32",
-    raised: "712K",
-    currency: "USDT",
-    progress: 89,
-    hardCap: "800K",
-    price: "1:2000",
-  },
-  {
-    id: "sonic",
-    name: "SONIC",
-    logo: "/placeholder.svg?height=32&width=32",
-    raised: "1.2M",
-    currency: "USDT",
-    progress: 95,
-    hardCap: "1.25M",
-    price: "1:750",
-  },
-  {
-    id: "chomp",
-    name: "CHOMP",
-    logo: "/placeholder.svg?height=32&width=32",
-    raised: "47K",
-    currency: "SOL",
-    progress: 83,
-    hardCap: "56K SOL",
-    price: "1:0.001",
-    description: "chomp the dog og meme from Vietnam",
-  },
-  {
-    id: "pepe",
-    name: "PEPE",
-    logo: "/placeholder.svg?height=32&width=32",
-    raised: "520K",
-    currency: "USDT",
-    progress: 74,
-    hardCap: "700K",
-    price: "1:0.005",
-  },
-];
+// const tokens = [
+//   {
+//     id: "mvt",
+//     name: "MVT",
+//     logo: "/placeholder.svg?height=32&width=32",
+//     raised: "340K",
+//     currency: "USDT",
+//     progress: 68,
+//     hardCap: "500K",
+//     price: "1:000",
+//   }
+// ];
+// {
+//   id: 3,
+//   name: 'OPOS',
+//   symbol: 'PRS',
+//   url: 'https://raw.githubusercontent.com/solana-developers/opos-asset/main/assets/DeveloperPortal/metadata.json',
+//   userId: 2,
+//   website: null,
+//   twitter: null,
+//   supply: null,
+//   ticker: 1000,
+//   price: 200,
+//   sale_start: 1741808961,
+//   sale_end: 1841808961,
+//   min_purchase: 1,
+//   max_purchase: 1,
+//   token_mint: 'Atz1c67yzKi5FHhZnuoKaPwRZb2Mb1ssi6Uf23fq4tXj',
+//   associated_token_presale: '9JPChVB53VxcVbSt84zahe1uY3n3vFxBzSSK4FRbNNZP'
+// }
 
-export default function PresalesPage() {
+
+async function updateTokens(tokens: any[]) {
+  const updatedTokens = await Promise.all(
+    tokens.map(async (token: any) => {
+      const metadata = await fetchMetadata(token.url);
+      return metadata ? { ...token, url: metadata.image } : token;
+    })
+  );
+
+  console.log("updatedTokens", updatedTokens);
+  return updatedTokens;
+}
+
+export default async function PresalesPage() {
+  let { tokens } = await getPresale();
+  tokens = await updateTokens(tokens);
+
+  console.log("updated token inside component:", tokens)
+
   return (
     <main className="flex-1 py-8">
       <div className="w-full max-w-screen-2xl mx-auto px-4 md:px-8 lg:px-12">
-      <div className="mb-6">
+        <div className="mb-6">
           <Button variant="ghost" asChild className="mb-4 -ml-4 h-8">
             <Link href="/">
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -105,7 +92,7 @@ export default function PresalesPage() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             {tokens.map((token) => (
               <Link
-                href={`/launch/token/${token.id}`}
+                href={`/launch/token/${token.token_mint}`}
                 key={token.id}
                 className="transition-transform hover:scale-[1.02]"
               >
@@ -114,7 +101,7 @@ export default function PresalesPage() {
                     <div className="mb-4 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <img
-                          src={token.logo || "/placeholder.svg"}
+                          src={token.url}
                           alt={token.name}
                           className="h-8 w-8 rounded-full bg-gray-800"
                         />
@@ -127,17 +114,17 @@ export default function PresalesPage() {
 
                     <div className="mb-2 flex items-center justify-between text-sm">
                       <span className="text-gray-400">
-                        {token.raised} {token.currency}
+                        {300} $
                       </span>
-                      <span className="font-medium">{token.progress}%</span>
+                      <span className="font-medium">{43}%</span>
                     </div>
 
-                    <Progress value={token.progress} className="h-2" />
+                    <Progress value={33} className="h-2" />
 
                     <div className="mt-4 flex justify-between text-sm">
                       <div>
                         <div className="text-gray-400">Hard Cap</div>
-                        <div>{token.hardCap}</div>
+                        <div>{token.ticker}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-gray-400">Price</div>

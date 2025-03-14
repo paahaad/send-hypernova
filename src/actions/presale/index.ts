@@ -14,7 +14,7 @@ export const getPresale = async (page: number = 1, pageSize: number = 10) => {
         const totalPages = Math.ceil(totalRecords / pageSize);
 
         return {
-            data: allToken,
+            tokens: allToken,
             meta: {
                 totalRecords,
                 totalPages,

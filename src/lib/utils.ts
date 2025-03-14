@@ -17,3 +17,20 @@ export function generatePDA(seed: string, keypair: PublicKey) {
   
   return { pda, bump };
 }
+
+export async function fetchMetadata(url: string) {
+  try {
+      const response = await fetch(url);
+      if (!response.ok) {
+          throw new Error(`Failed to fetch: ${response.statusText}`);
+      }
+      const data = await response.json();
+      return {
+          name: data.name,
+          image: data.image
+      };
+  } catch (error) {
+      console.error("Error fetching metadata:", error);
+      return null;
+  }
+}

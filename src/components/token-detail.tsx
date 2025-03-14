@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Copy, Info } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -19,34 +19,92 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAnchorProvider } from "@/components/solana-provider";
+import { getHypernovaProgram } from "@project/anchor";
+import { PROGRAM_ID, VAULT } from "@/lib/constants";
 
-// This would normally come from a database or API
-const tokenData = {
-  id: "chomp",
-  name: "chomp",
-  symbol: "CHOMP",
-  logo: "/placeholder.svg?height=80&width=80",
-  description: "chomp the dog og meme from Vietnam",
-  bondingCurve: 83,
-  kingOfHill: 97,
-  crownedDate: "3/13/2025, 6:22:46 PM",
-  marketCap: "$52,229",
-  bondingAmount: "47,344 SOL",
-  contractAddress: "TM8ht...pump",
-  website: "https://chomp.io",
-};
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { BN } from "bn.js";
+import { PublicKey } from "@solana/web3.js";
+import { getToken } from "@/actions/mint";
+import { fetchMetadata } from "@/lib/utils";
 
-export default function TokenDetail({ params }: { params: { id: string } }) {
+
+export default function TokenDetail({ params }: { params: { token: string } }) {
+
+  const { token } = params;
+  const wallet = useWallet();
+  const { connection } = useConnection();
+  const provider = useAnchorProvider();
+  const program = useMemo(
+    () => getHypernovaProgram(provider, PROGRAM_ID),
+    [provider]
+  );
   const [amount, setAmount] = useState("");
   const [tab, setTab] = useState("buy");
 
+  const [tokenData, setTokenData] = useState<any>();
+
   const handleAmountChange = (value: string) => {
+    console.log("value", value);
     setAmount(value);
   };
 
   const handleQuickAmount = (value: string) => {
     setAmount(value);
   };
+
+  useEffect(()=>{
+    async function TokenDetail(mint:string) {
+
+      const {data} = await getToken(mint);
+      if(data?.url){
+        let metadata = await fetchMetadata(data?.url)
+        let token = {...data, url:metadata?.image}
+        console.log("tokenData? Details are", token)
+        setTokenData(token)
+      }
+    } 
+    TokenDetail(token)
+  },[]);
+  
+  const handleBuy = async () => {
+    if (!wallet.publicKey){
+      alert("No wallet is connected")
+      return
+    };
+
+    // get mint account from db
+    if(!tokenData.id && !amount){
+      console.log("No token selected or amount is zeor")
+      return;
+    }
+    
+    const mintAddress = new PublicKey(token);
+
+    console.log("this is the mint account before sending", mintAddress.toBase58())
+    const [presalePDA, bump] = PublicKey.findProgramAddressSync(
+      [Buffer.from("presale"), mintAddress.toBuffer()],
+      program.programId
+    );
+
+    console.log("equivelent PDA", presalePDA.toBase58(), amount)
+
+    let tx =  await program.methods.purchase(
+      new BN(tokenData.id),
+      new BN(amount)
+    ).accounts({
+      user: wallet.publicKey as PublicKey,
+      mintAccount: mintAddress,
+    }).transaction()
+    
+    try {
+        const signature = await wallet.sendTransaction(tx, connection);
+        console.log("Transaction successful!", signature);
+    } catch (error) {
+        console.error("Transaction failed", error);
+    }
+};
 
   return (
     <main className="flex flex-1 flex-col py-8 w-full max-w-screen-2xl mx-auto px-4 md:px-8 lg:px-12">
@@ -59,17 +117,17 @@ export default function TokenDetail({ params }: { params: { id: string } }) {
       </Link>
 
       <div className="grid gap-6 md:grid-cols-[1fr_1fr]">
-        {/* Token Info Card */}
+        {/* tokenData? Info Card */}
         <Card className="border-gray-800 bg-gray-900">
           <CardHeader className="flex flex-row items-center gap-4 pb-2">
             <img
-              src={tokenData.logo || "/placeholder.svg"}
-              alt={tokenData.name}
+              src={tokenData?.url || "/placeholder.svg"}
+              alt={tokenData?.name}
               className="h-20 w-20 rounded-md bg-gray-800"
             />
             <div>
-              <h2 className="text-2xl font-bold">{tokenData.symbol}</h2>
-              <p className="text-sm text-gray-400">{tokenData.description}</p>
+              <h2 className="text-2xl font-bold">{tokenData?.symbol}</h2>
+              <p className="text-sm text-gray-400">{tokenData?.description}</p>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -78,7 +136,7 @@ export default function TokenDetail({ params }: { params: { id: string } }) {
                 <div className="flex items-center gap-1 text-sm text-gray-400">
                   <span>Total market cap:</span>
                   <span className="font-medium text-white">
-                    {tokenData.bondingCurve}%
+                    {tokenData?.bondingCurve}%
                   </span>
                   <TooltipProvider>
                     <Tooltip>
@@ -93,7 +151,7 @@ export default function TokenDetail({ params }: { params: { id: string } }) {
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="max-w-xs text-xs">
-                          this showes the total token sold before 
+                          this showes the total tokenData? sold before 
                           graduate.
                         </p>
                       </TooltipContent>
@@ -102,15 +160,15 @@ export default function TokenDetail({ params }: { params: { id: string } }) {
                 </div>
               </div>
               <Progress
-                value={tokenData.bondingCurve}
+                value={44}
                 className="h-2 bg-gray-800"
                 indicatorClassName="bg-green-500"
               />
               <p className="mt-1 text-xs text-gray-400">
-                graduate this coin at {tokenData.marketCap} market
+                graduate this coin at {200} market
                 cap,
                 <br />
-                there is {tokenData.bondingAmount} in the presale pool.
+                there is {11} in the presale pool.
               </p>
             </div>
 
@@ -121,7 +179,7 @@ export default function TokenDetail({ params }: { params: { id: string } }) {
                 className="w-full justify-between border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
               >
                 <span>website</span>
-                <span className="text-gray-500">{tokenData.website}</span>
+                <span className="text-gray-500">{tokenData?.website}</span>
               </Button>
 
               <Button
@@ -130,7 +188,7 @@ export default function TokenDetail({ params }: { params: { id: string } }) {
               >
                 <span>contract address:</span>
                 <div className="flex items-center gap-1 text-gray-500">
-                  <span>{tokenData.contractAddress}</span>
+                  <span>{tokenData?.token_mint}</span>
                   <Copy className="h-3 w-3" />
                 </div>
               </Button>
@@ -158,18 +216,12 @@ export default function TokenDetail({ params }: { params: { id: string } }) {
               value={tab}
               onValueChange={setTab}
             >
-              <TabsList className="grid w-full grid-cols-2 bg-gray-800">
+              <TabsList className="grid w-full grid-cols-1 bg-gray-800">
                 <TabsTrigger
                   value="buy"
                   className={tab === "buy" ? "bg-green-500 text-black" : ""}
                 >
                   buy
-                </TabsTrigger>
-                <TabsTrigger
-                  value="sell"
-                  className={tab === "sell" ? "bg-red-500 text-black" : ""}
-                >
-                  sell
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -252,7 +304,10 @@ export default function TokenDetail({ params }: { params: { id: string } }) {
             </div>
           </CardContent>
           <CardFooter className="px-4 pb-4 pt-0">
-            <Button className="w-full bg-green-500 py-6 text-lg font-medium text-black hover:bg-green-600">
+            <Button 
+              className="w-full bg-green-500 py-6 text-lg font-medium text-black hover:bg-green-600"
+              onClick={handleBuy}
+            >
               place trade
             </Button>
           </CardFooter>

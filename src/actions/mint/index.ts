@@ -1,6 +1,7 @@
 'use server';
 import db from "@/db"
 import { TokenDetails } from "@/lib/schema";
+import { date } from "zod";
 
 export const createToken = async (values: TokenDetails) => {
     try {
@@ -37,7 +38,31 @@ export const createToken = async (values: TokenDetails) => {
         });
 
         console.log("Token created successfully!");
+        return { success: true, message: "Token created successfully!" };
+
     } catch (error) {
-        console.error("Error creating token:", error);
+        return { success: false, message: "Token created failed!" };
     }
 };
+
+export const getToken = async (mint: string) => {
+    try{
+        let token = await db.token.findFirst({
+            where: {
+                token_mint : mint
+            },
+            include: {
+                user:{
+                    select:{
+                        pubkey: true
+                    }
+                }
+            }
+        })
+        return { success: true, data: token};
+
+    }catch(err){
+        return { success: false, message: "Failed to query token details!" };
+        console.log("Error in `getToken`")
+    }
+}

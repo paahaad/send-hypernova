@@ -7,6 +7,8 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ArrowRight, Plus } from "lucide-react";
+import { fetchMetadata } from "@/lib/utils";
+import { getPresale } from "@/actions/presale";
 
 // Token data
 const tokens = [
@@ -73,7 +75,25 @@ const tokens = [
   },
 ];
 
-export default function Home() {
+async function updateTokens(tokens: any[]) {
+  const updatedTokens = await Promise.all(
+    tokens.map(async (token: any) => {
+      const metadata = await fetchMetadata(token.url);
+      return metadata ? { ...token, url: metadata.image } : token;
+    })
+  );
+
+  console.log("updatedTokens", updatedTokens);
+  return updatedTokens;
+}
+
+export default async function Home() {
+  let { tokens } = await getPresale();
+  tokens = await updateTokens(tokens);
+
+  console.log("updated token inside component:", tokens)
+
+  
   return (
     <main className="flex-1">
       <section className=" w-full py-4 md:py-12 bg-gradient-to-b from-background to-background/50">
@@ -99,57 +119,60 @@ export default function Home() {
       </section>
 
       <section className="w-full max-w-screen-2xl mx-auto px-4 md:px-8 lg:px-12">
-        {/* Token Grid */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {tokens.map((token) => (
-            <Link
-              href={`/launch/token/${token.id}`}
-              key={token.id}
-              className="transition-transform hover:scale-[1.02]"
-            >
-              <Card className="overflow-hidden border-gray-800 bg-gray-900 shadow-md">
-                <CardContent className="p-4">
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={token.logo || "/placeholder.svg"}
-                        alt={token.name}
-                        className="h-8 w-8 rounded-full bg-gray-800"
-                      />
-                      <span className="text-lg font-bold">{token.name}</span>
+        <section className="mt-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {tokens.map((token) => (
+              <Link
+                href={`/launch/token/${token.token_mint}`}
+                key={token.id}
+                className="transition-transform hover:scale-[1.02]"
+              >
+                <Card className="overflow-hidden border-gray-800 bg-gray-900 shadow-md">
+                  <CardContent className="p-4">
+                    <div className="mb-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={token.url}
+                          alt={token.name}
+                          className="h-8 w-8 rounded-full bg-gray-800"
+                        />
+                        <span className="text-lg font-bold">{token.name}</span>
+                      </div>
+                      <div className="rounded-full px-2 py-1 text-xs font-medium">
+                        Active
+                      </div>
                     </div>
-                    <div className="rounded-full px-2 py-1 text-xs font-medium">
-                      Active
-                    </div>
-                  </div>
 
-                  <div className="mb-2 flex items-center justify-between text-sm">
-                    <span className="text-gray-400">
-                      {token.raised} {token.currency}
-                    </span>
-                    <span className="font-medium">{token.progress}%</span>
-                  </div>
-
-                  <Progress value={token.progress} className="h-2" />
-
-                  <div className="mt-4 flex justify-between text-sm">
-                    <div>
-                      <div className="text-gray-400">Hard Cap</div>
-                      <div>{token.hardCap}</div>
+                    <div className="mb-2 flex items-center justify-between text-sm">
+                      <span className="text-gray-400">
+                        {300} $
+                      </span>
+                      <span className="font-medium">{43}%</span>
                     </div>
-                    <div className="text-right">
-                      <div className="text-gray-400">Price</div>
-                      <div>{token.price}</div>
+
+                    <Progress value={33} className="h-2" />
+
+                    <div className="mt-4 flex justify-between text-sm">
+                      <div>
+                        <div className="text-gray-400">Hard Cap</div>
+                        <div>{token.ticker}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-gray-400">Price</div>
+                        <div>{token.price}</div>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="border-t border-gray-800 p-0">
-                  <Button className="w-full rounded-none ">Participate</Button>
-                </CardFooter>
-              </Card>
-            </Link>
-          ))}
-        </div>
+                  </CardContent>
+                  <CardFooter className="border-t border-gray-800 p-0">
+                    <Button className="w-full rounded-none ">
+                      Participate
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
       </section>
     </main>
   );
