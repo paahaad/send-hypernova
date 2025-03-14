@@ -20,13 +20,6 @@ pub struct PurchaseTokens<'info> {
     pub user: Signer<'info>,
 
     #[account(mut)]
-    pub creator: SystemAccount<'info>,
-
-    #[account(
-        mut,
-        seeds = [b"mint", creator.key().as_ref(), id.to_le_bytes().as_ref()],
-        bump
-    )]
     pub mint_account: Account<'info, Mint>,
 
     #[account(
@@ -72,19 +65,19 @@ pub fn purchase_tokens(ctx: Context<PurchaseTokens>, id: u64, sol_amount: u64) -
     );
 
     // Check purchase limits
-    require!(
-        tokens_to_purchase >= ctx.accounts.presale_account.min_purchase,
-        LaunchpadError::BelowMinimumPurchase
-    );
-    require!(
-        tokens_to_purchase <= ctx.accounts.presale_account.max_purchase,
-        LaunchpadError::AboveMaximumPurchase
-    );
+    // require!(
+    //     tokens_to_purchase >= ctx.accounts.presale_account.min_purchase,
+    //     LaunchpadError::BelowMinimumPurchase
+    // );
+    // require!(
+    //     tokens_to_purchase <= ctx.accounts.presale_account.max_purchase,
+    //     LaunchpadError::AboveMaximumPurchase
+    // );
 
-    require!(
-        tokens_to_purchase <= ctx.accounts.presale_account.available,
-        LaunchpadError::InsufficientTokens
-    );
+    // require!(
+    //     tokens_to_purchase <= ctx.accounts.presale_account.available,
+    //     LaunchpadError::InsufficientTokens
+    // );
 
     // Tranfer sol
     let transfer_instruction = system_instruction::transfer(
@@ -96,19 +89,31 @@ pub fn purchase_tokens(ctx: Context<PurchaseTokens>, id: u64, sol_amount: u64) -
         &transfer_instruction,
         &[
             ctx.accounts.user.to_account_info(),
-            ctx.accounts.presale_account.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
         ],
     )?;
+    msg!("Sol tranfer success!");
 
+    let developer = ctx.accounts.presale_account.developer;
+    
     // PDA signer seeds
     let binding = id.to_le_bytes();
     let signer_seeds: &[&[&[u8]]] = &[&[
         b"mint",
-        ctx.accounts.creator.to_account_info().key.as_ref(),
+        developer.as_ref(),  // Must be the developer key, not the mint key
         binding.as_ref(),
-        &[ctx.bumps.mint_account],
+        &[ctx.accounts.presale_account.bump],
     ]];
+
+    msg!("{:?}",ctx.accounts.presale_account.to_account_info());
+    // // PDA signer seeds
+    // let binding = id.to_le_bytes();
+    // let signer_seeds: &[&[&[u8]]] = &[&[
+    //     b"mint",
+    //     ctx.accounts.mint_account.to_account_info().key.as_ref(),
+    //     binding.as_ref(),
+    //     &[ctx.accounts.presale_account.bump],
+    // ]];
 
     // from mint ATA to user ATA
     transfer_checked(
