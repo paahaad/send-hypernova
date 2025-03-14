@@ -50,4 +50,8 @@ pub mod hypernova {
     pub fn mint_token(ctx: Context<MintToken>, id: u64) -> Result<()> {
         mint::mint_token(ctx, id)
     }
+
+    pub fn purchase(ctx: Context<PurchaseTokens>, id: u64, sol_amount: u64) -> Result<()> {
+        purchase::purchase_tokens(ctx, id, sol_amount)
+    }
 }
