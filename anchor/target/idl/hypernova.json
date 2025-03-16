@@ -1,5 +1,5 @@
 {
-  "address": "9YE8AZ2MReBge5sXGAXCosjK5pAMX3vqmEVddJQPiTjL",
+  "address": "EH8YMDtK1rWdAbF6La4v55ehDRzDxF4bZ47n8X3kXRMJ",
   "metadata": {
     "name": "hypernova",
     "version": "0.1.0",
@@ -461,32 +461,38 @@
           "signer": true
         },
         {
-          "name": "mint_account",
+          "name": "presale_account",
           "writable": true
         },
         {
-          "name": "presale_account",
+          "name": "mint_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  112,
-                  114,
-                  101,
-                  115,
-                  97,
-                  108,
-                  101
+                  109,
+                  105,
+                  110,
+                  116
                 ]
               },
               {
                 "kind": "account",
-                "path": "mint_account"
+                "path": "presale_account.developer",
+                "account": "PresaleInfo"
+              },
+              {
+                "kind": "arg",
+                "path": "id"
               }
             ]
           }
+        },
+        {
+          "name": "vault",
+          "writable": true
         },
         {
           "name": "user_token_account",

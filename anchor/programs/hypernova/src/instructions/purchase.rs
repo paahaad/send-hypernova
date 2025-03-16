@@ -2,7 +2,7 @@ use solana_program::{program::invoke, system_instruction};
 
 use crate::state::presale::PresaleInfo;
 use {
-    crate::error::LaunchpadError,
+    crate::error::*,
     anchor_lang::prelude::*,
     anchor_spl::{
         associated_token::AssociatedToken,
@@ -20,14 +20,18 @@ pub struct PurchaseTokens<'info> {
     pub user: Signer<'info>,
 
     #[account(mut)]
-    pub mint_account: Account<'info, Mint>,
+    pub presale_account: Box<Account<'info, PresaleInfo>>,
 
     #[account(
         mut,
-        seeds = [b"presale", mint_account.key().as_ref()],
-        bump = presale_account.bump
+        seeds = [b"mint", presale_account.developer.as_ref(), id.to_le_bytes().as_ref()],
+        bump
     )]
-    pub presale_account: Box<Account<'info, PresaleInfo>>,
+    pub mint_account: Account<'info, Mint>,
+
+    /// CHECK: This is a safe account that we're just transferring SOL to
+    #[account(mut)]
+    pub vault: UncheckedAccount<'info>,
 
     #[account(
         init_if_needed,
@@ -74,35 +78,36 @@ pub fn purchase_tokens(ctx: Context<PurchaseTokens>, id: u64, sol_amount: u64) -
     //     LaunchpadError::AboveMaximumPurchase
     // );
 
-    // require!(
-    //     tokens_to_purchase <= ctx.accounts.presale_account.available,
-    //     LaunchpadError::InsufficientTokens
-    // );
+    require!(
+        tokens_to_purchase <= ctx.accounts.presale_account.available,
+        LaunchpadError::InsufficientTokens
+    );
 
     // Tranfer sol
     let transfer_instruction = system_instruction::transfer(
         &ctx.accounts.user.key(),
-        &&ctx.accounts.presale_account.vault.key(),
-        sol_amount,
+        &&ctx.accounts.vault.key(),
+        sol_amount * 1000000000,
     );
     invoke(
         &transfer_instruction,
         &[
             ctx.accounts.user.to_account_info(),
+            ctx.accounts.vault.to_account_info(),
             ctx.accounts.system_program.to_account_info(),
         ],
     )?;
     msg!("Sol tranfer success!");
 
-    let developer = ctx.accounts.presale_account.developer;
     
     // PDA signer seeds
+    let developer = ctx.accounts.presale_account.developer;
     let binding = id.to_le_bytes();
     let signer_seeds: &[&[&[u8]]] = &[&[
         b"mint",
         developer.as_ref(),  // Must be the developer key, not the mint key
         binding.as_ref(),
-        &[ctx.accounts.presale_account.bump],
+        &[ctx.bumps.mint_account],
     ]];
 
     msg!("{:?}",ctx.accounts.presale_account.to_account_info());
@@ -121,7 +126,7 @@ pub fn purchase_tokens(ctx: Context<PurchaseTokens>, id: u64, sol_amount: u64) -
             ctx.accounts.token_program.to_account_info(),
             TransferChecked {
                 from: ctx.accounts.associated_token_presale.to_account_info(),
-                to: ctx.accounts.user.to_account_info(),
+                to: ctx.accounts.user_token_account.to_account_info(),
                 authority: ctx.accounts.mint_account.to_account_info(),
                 mint: ctx.accounts.mint_account.to_account_info(),
             },

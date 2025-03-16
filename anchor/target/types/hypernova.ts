@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/hypernova.json`.
  */
 export type Hypernova = {
-  "address": "9YE8AZ2MReBge5sXGAXCosjK5pAMX3vqmEVddJQPiTjL",
+  "address": "EH8YMDtK1rWdAbF6La4v55ehDRzDxF4bZ47n8X3kXRMJ",
   "metadata": {
     "name": "hypernova",
     "version": "0.1.0",
@@ -467,32 +467,38 @@ export type Hypernova = {
           "signer": true
         },
         {
-          "name": "mintAccount",
+          "name": "presaleAccount",
           "writable": true
         },
         {
-          "name": "presaleAccount",
+          "name": "mintAccount",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  112,
-                  114,
-                  101,
-                  115,
-                  97,
-                  108,
-                  101
+                  109,
+                  105,
+                  110,
+                  116
                 ]
               },
               {
                 "kind": "account",
-                "path": "mintAccount"
+                "path": "presale_account.developer",
+                "account": "presaleInfo"
+              },
+              {
+                "kind": "arg",
+                "path": "id"
               }
             ]
           }
+        },
+        {
+          "name": "vault",
+          "writable": true
         },
         {
           "name": "userTokenAccount",

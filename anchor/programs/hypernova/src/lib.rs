@@ -7,7 +7,7 @@ pub mod error;
 pub mod instructions;
 pub mod state;
 
-declare_id!("9YE8AZ2MReBge5sXGAXCosjK5pAMX3vqmEVddJQPiTjL");
+declare_id!("EH8YMDtK1rWdAbF6La4v55ehDRzDxF4bZ47n8X3kXRMJ");
 
 #[program]
 pub mod hypernova {
