@@ -57,7 +57,7 @@ export default function CreateToken() {
       name: "",
       symbol: "",
       decimals: 5,
-      totalSupply: 0,
+      totalSupply: 1000000000,
       description: "",
       blockchain: "",
       tokenType: "",
@@ -135,6 +135,7 @@ export default function CreateToken() {
         true // allowOwnerOffCurve
       );
 
+
       const tx2 = await program.methods
         .mintToken(new BN(id))
         .accounts({
@@ -159,6 +160,7 @@ export default function CreateToken() {
       console.log(`  Presale Account Details:`, presaleAccount);
 
       const token_details = {
+        tokenId: id,
         user: wallet.publicKey.toBase58(),
         tokenName: values.name,
         tokenSymbol: values.symbol,
@@ -171,7 +173,9 @@ export default function CreateToken() {
         min_purchase: values.minPurchase,
         max_purchase: values.minPurchase,
         token_min: mintPDA.toBase58(),
+        available: (values.totalSupply * values.presalePercentage / 100),
         associated_token_presale: associatedTokenPresale.toBase58(),
+        presaleAccount: presalePDA.toBase58()
       };
       await createToken(token_details);
     } catch (err) {

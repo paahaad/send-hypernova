@@ -91,6 +91,8 @@ export const tokenFormSchema = z.object({
 
 
 export interface TokenDetails {
+
+  tokenId: number,
   user: string; // wallet publicKey in base58 format
   tokenName: string;
   tokenSymbol: string;
@@ -102,6 +104,7 @@ export interface TokenDetails {
   sale_end: number;
   min_purchase: number;
   max_purchase: number;
+  available: number
   
   token_min: string; // token_mint in base58 format
   associated_token_presale?: string; // optional as per Prisma schema

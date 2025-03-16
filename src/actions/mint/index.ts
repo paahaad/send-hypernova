@@ -19,6 +19,7 @@ export const createToken = async (values: TokenDetails) => {
 
         await db.token.create({
             data: {
+                tokenId: values.tokenId,
                 name: values.tokenName,
                 symbol: values.tokenSymbol,
                 url: values.tokenUrl,
@@ -31,9 +32,10 @@ export const createToken = async (values: TokenDetails) => {
 
                 min_purchase: values.min_purchase,
                 max_purchase: values.max_purchase,
-              
+                available: values.available,
                 token_mint: values.token_min,
-                associated_token_presale: values.associated_token_presale
+                associated_token_presale: values.associated_token_presale,
+                presaleAccount: values.presaleAccount
             }
         });
 

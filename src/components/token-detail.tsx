@@ -25,7 +25,7 @@ import { PROGRAM_ID, VAULT } from "@/lib/constants";
 
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { BN } from "bn.js";
-import { PublicKey } from "@solana/web3.js";
+import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { getToken } from "@/actions/mint";
 import { fetchMetadata } from "@/lib/utils";
 
@@ -40,18 +40,18 @@ export default function TokenDetail({ params }: { params: { token: string } }) {
     () => getHypernovaProgram(provider, PROGRAM_ID),
     [provider]
   );
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState<number>(0);
   const [tab, setTab] = useState("buy");
 
   const [tokenData, setTokenData] = useState<any>();
 
   const handleAmountChange = (value: string) => {
     console.log("value", value);
-    setAmount(value);
+    setAmount(Number(value));
   };
 
   const handleQuickAmount = (value: string) => {
-    setAmount(value);
+    setAmount(Number(value));
   };
 
   useEffect(()=>{
@@ -80,22 +80,23 @@ export default function TokenDetail({ params }: { params: { token: string } }) {
       return;
     }
     
-    const mintAddress = new PublicKey(token);
+    const presaleAccount = new PublicKey(tokenData.presaleAccount);
 
-    console.log("this is the mint account before sending", mintAddress.toBase58())
-    const [presalePDA, bump] = PublicKey.findProgramAddressSync(
-      [Buffer.from("presale"), mintAddress.toBuffer()],
-      program.programId
-    );
+    // console.log("this is the mint account before sending", mintAddress.toBase58())
+    // const [presalePDA, bump] = PublicKey.findProgramAddressSync(
+    //   [Buffer.from("presale"), mintAddress.toBuffer()],
+    //   program.programId
+    // );
 
-    console.log("equivelent PDA", presalePDA.toBase58(), amount)
+    // console.log("equivelent PDA", presalePDA.toBase58(), amount)
 
     let tx =  await program.methods.purchase(
-      new BN(tokenData.id),
+      new BN(tokenData.tokenId),
       new BN(amount)
     ).accounts({
       user: wallet.publicKey as PublicKey,
-      mintAccount: mintAddress,
+      vault: VAULT,
+      presaleAccount: presaleAccount
     }).transaction()
     
     try {

@@ -23,6 +23,7 @@ model User {
 
 model Token {
   id Int @id @default(autoincrement())
+  tokenId Int
   name String
   symbol String
   url String
@@ -40,10 +41,11 @@ model Token {
   sale_end Int
   min_purchase Int
   max_purchase Int
-  
+  available Int
 
   token_mint String
   associated_token_presale String?
+  presaleAccount String?
 }
 
 
